@@ -7,13 +7,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/meerkat-manor/salainen"
+	"github.com/meerkat-manor/salainen/config"
 	"golang.design/x/clipboard"
-	"merebox.com/salainen"
-	"merebox.com/salainen/config"
-	"merebox.com/salainen/env"
-	"merebox.com/salainen/file"
-	"merebox.com/salainen/plain"
-	"merebox.com/salainen/wincred"
 )
 
 func main() {
@@ -44,16 +40,9 @@ func main() {
 		return
 	}
 
-	if *configFile == "" {
-		file.New("", nil)
-		env.New("", nil)
-		wincred.New("", nil)
-		plain.New("", nil)
-	} else {
-		_, err := config.New(*configFile)
-		if err != nil {
-			log.Fatalf("processing aborted due to error: %v", err)
-		}
+	_, err := config.New(*configFile)
+	if err != nil {
+		log.Fatalf("processing aborted due to error: %v", err)
 	}
 
 	if *storage {

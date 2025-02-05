@@ -3,7 +3,7 @@ package plain
 import (
 	"fmt"
 
-	"merebox.com/salainen"
+	"github.com/meerkat-manor/salainen"
 )
 
 type f struct{}

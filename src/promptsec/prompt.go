@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/manifoldco/promptui"
-	"merebox.com/salainen"
+	"github.com/meerkat-manor/salainen"
 )
 
 type f struct {

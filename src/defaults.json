@@ -2,18 +2,18 @@
     "name": "salainen",
     "version": "0.0.1",
     "storage": {
-        "wincred": {
+        "env": {
             "enabled": true,
-            "name": "WinCred",
+            "name": "Environmental Variable",
             "custom": {
-                "Prefix": "{{.Productname}}"
+                "Prefix": "{{.ProductName}}"
             }
         },
         "prompt": {
             "enabled": true,
             "name": "Prompt",
             "custom": {
-                "Prefix": "{{.Productname}}"
+                "Prefix": "{{.ProductName}}"
             }
         },
         "file": {
@@ -23,7 +23,7 @@
                 "RootPath": "~/.secrets/salainen"
             }
         },
-        "encryptedfile": {
+        "efile": {
             "enabled": true,
             "name": "Encrypted File System",
             "custom": {
@@ -31,6 +31,13 @@
                 "Algorithm": ""
             }
 
+        },
+        "wincred": {
+            "enabled": true,
+            "name": "Windows Credential Manager",
+            "custom": {
+                "Prefix": "{{.ProductName}}"
+            }
         },
         "bitwarden": {
             "enabled": true,

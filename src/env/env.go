@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"merebox.com/salainen"
+	"github.com/meerkat-manor/salainen"
 )
 
 type f struct {
@@ -30,19 +30,24 @@ func (sl *f) Init(custom interface{}) error {
 	return nil
 }
 
-func (sl *f) Put(path, val string) error {
+func (sl *f) Put(path, value string) error {
 	parts := strings.SplitN(path, "|", 2)
 	fpath := parts[0]
 
-	os.Setenv(sl.Prefix+fpath, val)
-	return nil
+	return os.Setenv(sl.Prefix+fpath, value)
 }
 
 func (sl *f) Get(path string) (string, error) {
 	parts := strings.SplitN(path, "|", 2)
 	fpath := parts[0]
 
-	return os.Getenv(sl.Prefix + fpath), nil
+	value := os.Getenv(sl.Prefix + fpath)
+
+	if value == "" {
+		return "", fmt.Errorf("failed to find value")
+	}
+
+	return value, nil
 }
 
 func (sl *f) Help() {

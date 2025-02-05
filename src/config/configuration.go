@@ -6,14 +6,17 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
+	"github.com/meerkat-manor/salainen"
+	"github.com/meerkat-manor/salainen/bitwarden"
+	"github.com/meerkat-manor/salainen/encryptedfile"
+	"github.com/meerkat-manor/salainen/env"
+	"github.com/meerkat-manor/salainen/file"
+	"github.com/meerkat-manor/salainen/promptsec"
+	"github.com/meerkat-manor/salainen/wincred"
 	"gopkg.in/yaml.v2"
-	"merebox.com/salainen"
-	"merebox.com/salainen/bitwarden"
-	"merebox.com/salainen/file"
-	"merebox.com/salainen/promptsec"
-	"merebox.com/salainen/wincred"
 )
 
 type StorageConfiguration struct {
@@ -107,8 +110,8 @@ func New(configFile string) (*ApplicationRun, error) {
 	}
 
 	app := ApplicationRun{
-		Name:        "salainen",
-		Version:     "0.0.1",
+		Name:        salainen.ProductName,
+		Version:     salainen.ProductVersion,
 		StorageName: map[string]string{},
 	}
 
@@ -125,6 +128,13 @@ func New(configFile string) (*ApplicationRun, error) {
 		for key, item := range conf.Storage {
 			if item.Enabled {
 				switch key {
+				case "env":
+					app.StorageName[key] = item.Name
+					err := env.Register(configFile, item.Custom)
+					if err != nil {
+						return nil, err
+					}
+
 				case "wincred":
 					app.StorageName[key] = item.Name
 					err := wincred.Register(configFile, item.Custom)
@@ -135,6 +145,13 @@ func New(configFile string) (*ApplicationRun, error) {
 				case "file":
 					app.StorageName[key] = item.Name
 					err := file.Register(configFile, item.Custom)
+					if err != nil {
+						return nil, err
+					}
+
+				case "efile":
+					app.StorageName[key] = item.Name
+					err := encryptedfile.Register(configFile, item.Custom)
 					if err != nil {
 						return nil, err
 					}
@@ -157,6 +174,57 @@ func New(configFile string) (*ApplicationRun, error) {
 			}
 
 		}
+	} else {
+		// Load defaults
+
+		custom := map[string]any{
+			"Prefix": "{{.ProductName}}",
+		}
+
+		app.StorageName["env"] = "Environmental Variables"
+		err := env.Register("", custom)
+		if err != nil {
+			return nil, err
+		}
+
+		app.StorageName["file"] = "File System"
+		err = file.Register("", nil)
+		if err != nil {
+			return nil, err
+		}
+
+		app.StorageName["efile"] = "Encrypted File System"
+		err = encryptedfile.Register("", nil)
+		if err != nil {
+			return nil, err
+		}
+
+		app.StorageName["prompt"] = "Prompt"
+		err = promptsec.Register("", nil)
+		if err != nil {
+			return nil, err
+		}
+
+		// If Windows
+		if runtime.GOOS == "windows" {
+			app.StorageName["wincred"] = "Windows Credential Manager"
+			err := env.Register("", custom)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// If Linux
+		if runtime.GOOS == "linux" {
+			/* paused until implementation TODO
+			app.StorageName["keyring"] = "Keyring"
+			err := env.Register("", custom)
+			if err != nil {
+				return nil, err
+			}
+			*/
+		}
+
 	}
 
 	return &app, nil

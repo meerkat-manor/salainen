@@ -10,6 +10,7 @@ const (
 	StorageSeparator byte   = ':'
 	SaneDefaults     bool   = true
 	ProductName      string = "salainen"
+	ProductVersion   string = "v0.0.1"
 )
 
 var (

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	vault "github.com/hashicorp/vault/api"
-	"merebox.com/salainen"
+	"github.com/meerkat-manor/salainen"
 )
 
 type f struct {

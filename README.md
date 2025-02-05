@@ -35,7 +35,7 @@ of mind.
 First import package
 
 ```go
-import "module merebox.com/salainen"
+import "github.com/meerkat-manor/salainen"
 ```
 
 ### Configuration
@@ -45,7 +45,7 @@ JSON or YAML format.  Please use only the extensions ``.json'`,
 ``.yaml`` or ``.yml` for your configuration files.
 
 
-The location is defined as an entry on a``map[string]interface{}``
+The secret storage location is defined as an entry on a``map[string]interface{}``
 and the map name is the storage location identifier.
 
 The configuration settings are different for each location and are set in
@@ -56,8 +56,8 @@ the parent for the custom block.
   If this item is not supplied and not set to ``true`` then the location is not
   available.
 * name : The location English name.  If not supplied then the section name is used.
-  This is only uuseful if listing available secret locations.
-* custom : A custom definition for each locatio.  Please refer to the location 
+  This is only useful if listing available secret locations.
+* custom : A custom definition for each location.  Please refer to the location 
   documentation for more details.  For example [file](./src/file/README.md)
 
 
@@ -68,9 +68,16 @@ An example configuration file is:
     "name": "salainen",
     "version": "0.0.1",
     "storage": {
-        "wincred": {
+        "env": {
             "enabled": true,
-            "name": "WinCred",
+            "name": "Environmental Variables",
+            "custom": {
+                "Prefix": "{{.ProductName}}"
+            }
+        },
+        "wincred": {
+            "enabled": false,
+            "name": "Windows Credential Manager",
             "custom": {
                 "Prefix": "{{.ProductName}}"
             }
@@ -89,13 +96,11 @@ An example configuration file is:
                 "RootPath": "~/.secrets/extras"
             }
         },
-        "bitwarden": {
-            "enabled": false,
-            "name": "Bitwarden",
+        "efile": {
+            "enabled": true,
+            "name": "Encrypted File System",
             "custom": {
-                "ApiUrl": "",
-                "IdentityUrl": "",
-                "AccessToken" : ""
+                "RootPath": "~/.secrets/extras"
             }
         }
     }
@@ -112,7 +117,7 @@ An example configuration file is:
 To set the secret value you call the function as
 
 ```go
-salainen.Set("env:<key>")
+salainen.Set("env:<key>", "<value>")
 ```
 
 This will use the default configuration and without 
@@ -120,20 +125,62 @@ a ``salainen.json`` or ``salainen.yml`` being in the current file
 search path or your home directory, it will enable **environmental**
 variables and files.
 
-The value **env** indicates that this is an environmental 
-storge location secret.
+The prefix value **env** indicates that this is an environmental 
+storage location secret.
 
 If you call the register function with a configuration file location
-then the sequence of calls is.  Once the locations are registered
+then the sequence of calls is:
+
+```go
+salainen.Register("<config file>")
+salainen.Set("env:<key>", "<value>")
+```
+
+Once the locations are registered
 you do not have to call the registration function within your 
 current program function.
 
+#### Get
+
+To get the secret value you call the function as
+
 ```go
-salainen.Register("<config file")
+salainen.Get("env:<key>")
+```
+
+This will use the default configuration and without 
+a ``salainen.json`` or ``salainen.yml`` being in the current file 
+search path or your home directory, it will enable **environmental**
+variables and files.
+
+The prefix value **env** indicates that this is an environmental 
+storage location secret.
+
+If you call the register function with a configuration file location
+then the sequence of calls is:  
+
+```go
+salainen.Register("<config file>")
 salainen.Set("env:<key>")
 ```
 
+Once the locations are registered
+you do not have to call the registration function within your 
+current program function.
+
 ### As command line
+
+The **salainen** program has a number of arguments, but the common use is
+for setting and getting the secret.
+
+```
+salainen env:my_secret  changeme
+```
+
+And to retrieve it is:
+```
+salainen env:my_secret
+```
 
 ## Future storage locations
 

@@ -11,9 +11,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/meerkat-manor/salainen"
 	"github.com/xdg-go/pbkdf2"
 	"golang.org/x/crypto/chacha20poly1305"
-	"merebox.com/salainen"
 )
 
 type f struct {
@@ -22,7 +22,7 @@ type f struct {
 }
 
 const pemType = "SALAINEN ENCODED FILE"
-const providerName = "encryptedfile"
+const providerName = "efile"
 
 type EncryptionAlgorithm string
 
@@ -49,7 +49,7 @@ func (sl *f) Init(custom interface{}) error {
 			case "ChaCha20-Poly1305":
 				sl.Algorithm = ChaCha20Poly1305
 			default:
-				return fmt.Errorf("encryption algorithm not recognised")
+				return fmt.Errorf("encryption algorithm not recognized")
 			}
 		}
 	}

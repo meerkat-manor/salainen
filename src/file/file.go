@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"merebox.com/salainen"
+	"github.com/meerkat-manor/salainen"
 )
 
 type f struct {

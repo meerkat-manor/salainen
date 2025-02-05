@@ -1,4 +1,4 @@
-module merebox.com/salainen
+module github.com/meerkat-manor/salainen
 
 go 1.23.4
 

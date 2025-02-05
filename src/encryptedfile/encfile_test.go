@@ -34,7 +34,7 @@ func TestSimpleEncFilePutGet(t *testing.T) {
 
 	sto, err := New("", custom)
 	if err != nil {
-		t.Errorf("failed to create file storage")
+		t.Errorf("failed to create file storage: %v", err)
 	} else {
 		if sto == nil {
 			t.Errorf("no file storage created")
@@ -42,7 +42,7 @@ func TestSimpleEncFilePutGet(t *testing.T) {
 
 			value, err := sto.Get("missingkey")
 			if err == nil {
-				t.Errorf("failed to flag error")
+				t.Errorf("failed to flag error: %v", err)
 			} else {
 				t.Logf("success with empty: %s", value)
 			}
@@ -51,11 +51,11 @@ func TestSimpleEncFilePutGet(t *testing.T) {
 			secret := "mysecretenc01"
 			err = sto.Put(key, secret)
 			if err != nil {
-				t.Errorf("failed to put value")
+				t.Errorf("failed to put value: %v", err)
 			} else {
 				value, err := sto.Get(key)
 				if err != nil || value != secret {
-					t.Errorf("failed to get value")
+					t.Errorf("failed to get value: '%s' %v", value, err)
 				} else {
 					t.Logf("success : %s", value)
 				}
@@ -83,7 +83,7 @@ func TestPassEncFilePutGet(t *testing.T) {
 
 			value, err := sto.Get("missingkey")
 			if err == nil {
-				t.Errorf("failed to flag error")
+				t.Errorf("failed to flag error: %v", err)
 			} else {
 				t.Logf("success with empty: %s", value)
 			}
