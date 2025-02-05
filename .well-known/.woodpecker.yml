@@ -1,0 +1,28 @@
+clone:
+  git:
+    image: woodpeckerci/plugin-git
+
+when:
+  branch: master
+  event: [push, pull_request]
+
+steps:
+
+  test:
+    image: golang:1.23
+    commands:
+      - cd src
+      - go test -v ./...
+
+  build:
+    image: golang:1.23
+    commands:
+      - cd src
+      - go mod download
+      - go build -o salainen ./cmd/main.go
+
+  lint:
+    image: golangci/golangci-lint:v1.50.1
+    commands:
+      - cd src
+      - golangci-lint run

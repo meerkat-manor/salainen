@@ -1,0 +1,17 @@
+meta {
+  name: Unlock
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{url}}/unlock
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "password": "{{password}}"
+  }
+}

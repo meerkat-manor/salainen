@@ -1,0 +1,15 @@
+meta {
+  name: List items - search deploylocal
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{url}}/list/object/items?search=deploylocal
+  body: none
+  auth: none
+}
+
+params:query {
+  search: deploylocal
+}

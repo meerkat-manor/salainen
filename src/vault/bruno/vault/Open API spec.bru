@@ -1,0 +1,15 @@
+meta {
+  name: Open API spec
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://127.0.0.1:8200/v1/sys/internal/specs/openapi?generic_mount_paths=false
+  body: none
+  auth: none
+}
+
+params:query {
+  generic_mount_paths: false
+}

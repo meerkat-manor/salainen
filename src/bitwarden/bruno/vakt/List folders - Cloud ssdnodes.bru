@@ -1,0 +1,15 @@
+meta {
+  name: List folders - Cloud ssdnodes
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{url}}/list/object/folders?search=Cloud/ssdnodes
+  body: none
+  auth: none
+}
+
+params:query {
+  search: Cloud/ssdnodes
+}
