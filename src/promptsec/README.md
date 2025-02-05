@@ -7,7 +7,7 @@ secret.
 
 ## Definition
 
-Following the secret storage defintion convention you can have:
+Following the secret storage definition convention you can have:
 
 
 ```
@@ -40,12 +40,12 @@ for local development and debugging of code.
 ## Configuration and usage
 
 The prompt secret type can be configured to require a certain complexity before
-teh valuue is accepted.  This can inlcude:
+teh value is accepted.  This can include:
 
 1. minimum and maximum length
 2. acceptable character set
 
-The valiation is defined by a Golang regex expresssion.
+The validation is defined by a Golang regex expression.
 
 The put or save action for ``prompt`` is not available as there is no
 secret storage location just a definition.

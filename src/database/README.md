@@ -1,3 +1,3 @@
-# Keyring secret storage
+# Database secret storage
 
 Future secret storage location.

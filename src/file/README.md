@@ -3,5 +3,6 @@
 If you are using the plain file secret storage
 then the contents are not encrypted.
 
-The security of your secret is depnedant on
+The security of your secret is dependant on
 securing the file.
+

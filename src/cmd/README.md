@@ -1,7 +1,7 @@
 # Salainen command
 
-The **salainen** comman line (CLI) function is provided to enable 
-a simple functon to set and get secrets (passwords, cerdentials).
+The **salainen** command line (CLI) function is provided to enable 
+a simple function to set and get secrets (passwords, credentials).
 
 There are a number of alternatives available especially if you are
 after a UI.
@@ -16,7 +16,7 @@ various assets, such as a database, web service or email service.
 
 A common approach is to use environment variables, but the values should
 not be captured in the source or IDE files that are saved to Git 
-repositories. This presents a challege as you cannot use scripts for
+repositories. This presents a challenge as you cannot use scripts for
 local execution or testing very easily.
 
 You could use something like Vault for all your projects, but this could be 
@@ -24,13 +24,13 @@ over engineering for many small projects.  You could use the native
 cloud key management / secrets solution, but again this might 
 not suit for local development.
 
-The secrets also need to reognise that there are different environments
+The secrets also need to recognize that there are different environments
 such as local development, build pipelines, testing, staging and finally
 production.
 
-Your developers may also on different OSs such as Lnux, Mac or Windows. 
+Your developers may also on different OSs such as Linux, Mac or Windows. 
 
-Each of these scenarious can have different secret storage capabilities and
+Each of these scenarios can have different secret storage capabilities and
 user needs.
 
 ## Use case
@@ -39,13 +39,13 @@ user needs.
 
 ###  Scripting
 
-As the **salainen** program can exceute natively on a many platforms, you can use
+As the **salainen** program can execute natively on a many platforms, you can use
 it in scripts such as ``bash`` or ``powershell`` to fetch secrets and then use 
 secret value in accessing secured assets.
 
 Commonly you might save secrets in environment variables, and with **salainen**
 you can continue to do so, but you now have the option of making them more
-dynamic or slecting alternative, more secure methods.
+dynamic or selecting alternative, more secure methods.
 
 You can pipe the secret from the command like so:
 
@@ -72,4 +72,7 @@ For these situations you should use the Golang **salainen** package within your
 Golang application.
 
 You can use the **salainen** CLI to set the secret values that are then consumed
-by you program.
+by you program. 
+
+_NOTE_: Do not use for setting environmental variables only for get.  Use the native
+OS tools for setting environmental variable values.
