@@ -58,7 +58,7 @@ the parent for the custom block.
 * name : The location English name.  If not supplied then the section name is used.
   This is only useful if listing available secret locations.
 * custom : A custom definition for each location.  Please refer to the location 
-  documentation for more details.  For example [file](./src/file/README.md)
+  documentation for more details.  For example [file](./extensions/file/README.md)
 
 
 An example configuration file is:
@@ -71,13 +71,6 @@ An example configuration file is:
         "env": {
             "enabled": true,
             "name": "Environmental Variables",
-            "custom": {
-                "Prefix": "{{.ProductName}}"
-            }
-        },
-        "wincred": {
-            "enabled": false,
-            "name": "Windows Credential Manager",
             "custom": {
                 "Prefix": "{{.ProductName}}"
             }
@@ -101,6 +94,20 @@ An example configuration file is:
             "name": "Encrypted File System",
             "custom": {
                 "RootPath": "~/.secrets/extras"
+            }
+        },
+        "keyring": {
+            "enabled": true,
+            "name": "Keyring",
+            "custom": {
+                "Service": "{{.ProductName}}"
+            }
+        },
+        "wincred": {
+            "enabled": false,
+            "name": "Windows Credential Manager",
+            "custom": {
+                "Prefix": "{{.ProductName}}"
             }
         }
     }

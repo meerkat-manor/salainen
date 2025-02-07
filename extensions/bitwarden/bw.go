@@ -219,7 +219,7 @@ func (sl *f) Help() {
 	fmt.Printf("The provider is only available on platforms supported by Bitwarden bw\n")
 	fmt.Printf("Compatible password managers: Vaultwarden\n")
 	fmt.Printf("\n")
-	fmt.Printf("For more information please see https://example.com/salainen/src/bitwarden/README.md \n")
+	fmt.Printf("For more information please see https://github.com/meerkat-manor/salainen/extensions/bitwarden/README.md \n")
 }
 
 func (sl *f) getFolders(client *gen.ClientWithResponses, folder string) (*types.UUID, error) {

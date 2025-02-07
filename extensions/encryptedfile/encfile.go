@@ -200,14 +200,14 @@ func (sl *f) Decode_ChaCha20Poly1305(pass string, data []byte) (string, error) {
 func (sl *f) Help() {
 	fmt.Printf("Encrypted file help\n\n")
 	fmt.Printf("An encrypted file can be used as a secret provider by\n")
-	fmt.Printf("using the prefix 'encryptedfile:' followed by the\n")
+	fmt.Printf("using the prefix 'efile:' followed by the\n")
 	fmt.Printf("file name in the configured directory.  The contents in\n")
 	fmt.Printf("the file is the encrypted secret which is decoded.\n")
 	fmt.Printf("\n")
 	fmt.Printf("The security of the secret is only as good as the access\n")
 	fmt.Printf("granted to the file and the encoding key.\n")
 	fmt.Printf("\n")
-	fmt.Printf("For more information please see https://example.com/salainen/src/encryptedfile/README.md \n")
+	fmt.Printf("For more information please see https://github.com/salainen/extensions/encryptedfile/README.md \n")
 }
 
 func New(config string, custom interface{}) (salainen.SecretStorage, error) {

@@ -32,8 +32,15 @@
             }
 
         },
-        "wincred": {
+        "keyring": {
             "enabled": true,
+            "name": "Keyring",
+            "custom": {
+                "Service": "{{.ProductName}}"
+            }
+        },
+        "wincred": {
+            "enabled": false,
             "name": "Windows Credential Manager",
             "custom": {
                 "Prefix": "{{.ProductName}}"

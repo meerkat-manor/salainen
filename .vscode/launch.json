@@ -9,7 +9,7 @@
             "type": "go",
             "request": "launch",
             "mode": "debug",
-            "program": "${workspaceFolder}/src/cmd/main.go",
+            "program": "${workspaceFolder}/cmd/main.go",
             "args": [
                 "-config",
                 "defaults.json",

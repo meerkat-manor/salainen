@@ -14,6 +14,7 @@ import (
 	"github.com/meerkat-manor/salainen/extensions/encryptedfile"
 	"github.com/meerkat-manor/salainen/extensions/env"
 	"github.com/meerkat-manor/salainen/extensions/file"
+	"github.com/meerkat-manor/salainen/extensions/keyring"
 	"github.com/meerkat-manor/salainen/extensions/promptsec"
 	"github.com/meerkat-manor/salainen/extensions/wincred"
 	"gopkg.in/yaml.v2"
@@ -138,6 +139,13 @@ func New(configFile string) (*ApplicationRun, error) {
 				case "wincred":
 					app.StorageName[key] = item.Name
 					err := wincred.Register(configFile, item.Custom)
+					if err != nil {
+						return nil, err
+					}
+
+				case "keyring":
+					app.StorageName[key] = item.Name
+					err := keyring.Register(configFile, item.Custom)
 					if err != nil {
 						return nil, err
 					}

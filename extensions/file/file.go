@@ -95,7 +95,7 @@ func (sl *f) Help() {
 	fmt.Printf("You can store secrets in your home directory by specifying a\n")
 	fmt.Printf("configured 'RootPath' such as '~/.secrets/%s'\n", "salainen") // TODO improve
 	fmt.Printf("\n")
-	fmt.Printf("For more information please see https://example.com/salainen/src/file/README.md \n")
+	fmt.Printf("For more information please see https://github.com/meerkat-manor/salainen/extensions/file/README.md \n")
 }
 
 func New(config string, custom interface{}) (salainen.SecretStorage, error) {
