@@ -8,7 +8,7 @@ import (
 func TestSimpleEnvCreate(t *testing.T) {
 
 	custom := map[string]any{
-		"Prefix": fmt.Sprintf("test_%s", "salainen"),
+		"Prefix": fmt.Sprintf("test_%s_", "salainen"),
 	}
 
 	sto, err := New("", custom)
@@ -35,7 +35,7 @@ func TestSimpleEnvPutGet(t *testing.T) {
 		t.Errorf("failed to create ENV storage")
 	} else {
 		if sto == nil {
-			t.Errorf("no fENV storage created")
+			t.Errorf("no ENV storage created")
 		} else {
 
 			value, err := sto.Get("missingkey")

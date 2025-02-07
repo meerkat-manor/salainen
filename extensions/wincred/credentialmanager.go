@@ -32,7 +32,7 @@ func (sl *f) Init(custom interface{}) error {
 func (sl *f) Put(path, value string) error {
 
 	if sl.Prefix != "" {
-		path = sl.Prefix + "/" + path
+		path = sl.Prefix + path
 	}
 
 	cred := wincred.NewGenericCredential(path)
@@ -49,7 +49,7 @@ func (sl *f) Put(path, value string) error {
 func (sl *f) Get(path string) (string, error) {
 
 	if sl.Prefix != "" {
-		path = sl.Prefix + "/" + path
+		path = sl.Prefix + path
 	}
 
 	cred, err := wincred.GetGenericCredential(path)

@@ -2,10 +2,10 @@
 
 This is plain password in the path and is not the path key to
 the storage.  This type of secret storage is insecure as the
-vaue is fixed to where the secret type is stored.
+value is fixed to where the secret type is stored.
 
 For example if the secret type is stored in a configuration file
-then the secrecy of the valuue is only as good as the security
+then the secrecy of the value is only as good as the security
 of the configuration file.
 
 **Warning:** Do not use this secret storage type in production

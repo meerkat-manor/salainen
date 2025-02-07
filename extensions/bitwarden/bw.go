@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/meerkat-manor/salainen"
-	"github.com/meerkat-manor/salainen/bitwarden/gen"
+	"github.com/meerkat-manor/salainen/extensions/bitwarden/gen"
 	"github.com/oapi-codegen/runtime/types"
 )
 

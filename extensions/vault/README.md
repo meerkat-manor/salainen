@@ -1,3 +1,3 @@
-# Keyring secret storage
+# Vault secret storage
 
 Future secret storage location.

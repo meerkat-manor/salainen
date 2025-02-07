@@ -10,12 +10,12 @@ import (
 	"strings"
 
 	"github.com/meerkat-manor/salainen"
-	"github.com/meerkat-manor/salainen/bitwarden"
-	"github.com/meerkat-manor/salainen/encryptedfile"
-	"github.com/meerkat-manor/salainen/env"
-	"github.com/meerkat-manor/salainen/file"
-	"github.com/meerkat-manor/salainen/promptsec"
-	"github.com/meerkat-manor/salainen/wincred"
+	"github.com/meerkat-manor/salainen/extensions/bitwarden"
+	"github.com/meerkat-manor/salainen/extensions/encryptedfile"
+	"github.com/meerkat-manor/salainen/extensions/env"
+	"github.com/meerkat-manor/salainen/extensions/file"
+	"github.com/meerkat-manor/salainen/extensions/promptsec"
+	"github.com/meerkat-manor/salainen/extensions/wincred"
 	"gopkg.in/yaml.v2"
 )
 
