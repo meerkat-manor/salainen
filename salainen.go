@@ -10,7 +10,7 @@ const (
 	StorageSeparator byte   = ':'
 	SaneDefaults     bool   = true
 	ProductName      string = "salainen"
-	ProductVersion   string = "v0.0.1"
+	ProductVersion   string = "v0.0.4"
 	SourceForgeURL   string = "https://github.com/meerkat-manor/salainen/tree/main"
 )
 
