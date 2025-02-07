@@ -11,6 +11,7 @@ const (
 	SaneDefaults     bool   = true
 	ProductName      string = "salainen"
 	ProductVersion   string = "v0.0.1"
+	SourceForgeURL   string = "https://github.com/meerkat-manor/salainen/tree/main"
 )
 
 var (

@@ -70,7 +70,7 @@ func (sl *f) Help() {
 	fmt.Printf("is one of the most secure providers available with the tool.\n")
 	fmt.Printf("The provider is only available on platforms supported by Microsoft\n")
 	fmt.Printf("\n")
-	fmt.Printf("For more information please see https://github.com/meerkat-manor/salainen/extensions/wincred/README.md \n")
+	fmt.Printf("For more information please see %s/extensions/wincred/README.md \n", salainen.SourceForgeURL)
 }
 
 func New(config string, custom interface{}) (salainen.SecretStorage, error) {

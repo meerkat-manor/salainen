@@ -207,7 +207,7 @@ func (sl *f) Help() {
 	fmt.Printf("The security of the secret is only as good as the access\n")
 	fmt.Printf("granted to the file and the encoding key.\n")
 	fmt.Printf("\n")
-	fmt.Printf("For more information please see https://github.com/salainen/extensions/encryptedfile/README.md \n")
+	fmt.Printf("For more information please see %s/extensions/encryptedfile/README.md \n", salainen.SourceForgeURL)
 }
 
 func New(config string, custom interface{}) (salainen.SecretStorage, error) {

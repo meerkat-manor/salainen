@@ -53,7 +53,14 @@ func (sl *f) Get(path string) (string, error) {
 }
 
 func (sl *f) Help() {
-	fmt.Printf("Keyring help\n")
+	fmt.Printf("Keyring help\n\n")
+	fmt.Printf("The Keyring can be used as a secret provider by using\n")
+	fmt.Printf(" the prefix 'keyring:' followed by the key to the secret\n")
+	fmt.Printf("\n")
+	fmt.Printf("As the credentials are tied to the logged in user, this\n")
+	fmt.Printf("is one of the most secure providers available with the tool.\n")
+	fmt.Printf("\n")
+	fmt.Printf("For more information please see %s/extensions/keyring/README.md \n", salainen.SourceForgeURL)
 }
 
 func New(config string, custom interface{}) (salainen.SecretStorage, error) {

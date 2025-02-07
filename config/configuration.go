@@ -207,6 +207,15 @@ func New(configFile string) (*ApplicationRun, error) {
 			return nil, err
 		}
 
+		customKR := map[string]any{
+			"Service": "{{.ProductName}}",
+		}
+		app.StorageName["keyring"] = "Keyring"
+		err = keyring.Register("", customKR)
+		if err != nil {
+			return nil, err
+		}
+
 		app.StorageName["prompt"] = "Prompt"
 		err = promptsec.Register("", nil)
 		if err != nil {
@@ -225,12 +234,7 @@ func New(configFile string) (*ApplicationRun, error) {
 		// If Linux
 		if runtime.GOOS == "linux" {
 			/* paused until implementation TODO
-			app.StorageName["keyring"] = "Keyring"
-			err := env.Register("", custom)
-			if err != nil {
-				return nil, err
-			}
-			*/
+			 */
 		}
 
 	}
