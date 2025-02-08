@@ -1,6 +1,6 @@
 module github.com/meerkat-manor/salainen
 
-go 1.23.4
+go 1.19.3
 
 require (
 	github.com/danieljoos/wincred v1.2.2
