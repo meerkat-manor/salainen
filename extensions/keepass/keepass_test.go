@@ -248,7 +248,7 @@ func TestNewFileGet(t *testing.T) {
 
 	if _, err := os.Stat(keepassFile); err == nil {
 		err = os.Remove(keepassFile)
-		if err == nil {
+		if err != nil {
 			t.Errorf("failed to remove test file: %s\n%v", keepassFile, err)
 		}
 	}

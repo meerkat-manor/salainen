@@ -57,21 +57,44 @@ func (sl *f) Init(custom interface{}) error {
 		fpath = filepath.Join(homeDir, fpath[2:])
 	}
 
-	// Check file exists
+	var dbFile *os.File
+
+	// Check file exists, and create on the assumption required
 	_, err := os.Stat(fpath)
 	if err != nil {
-		return err
-	}
+		dbFile, err = os.Create(fpath)
+		if err != nil {
+			return err
+		}
+		defer dbFile.Close()
 
-	dbFile, err := os.Open(fpath)
-	if err != nil {
-		return err
-	}
-	defer dbFile.Close()
+		// Add base group
+		rootGroup := gokeepasslib.NewGroup()
+		rootGroup.Name = sl.PrimaryGroup
 
-	sl.db = gokeepasslib.NewDatabase()
-	sl.db.Credentials = gokeepasslib.NewPasswordCredentials(sl.Credential)
-	_ = gokeepasslib.NewDecoder(dbFile).Decode(sl.db)
+		// now create the database containing the root group
+		sl.db = &gokeepasslib.Database{
+			Header:      gokeepasslib.NewHeader(),
+			Credentials: gokeepasslib.NewPasswordCredentials(sl.Credential),
+			Content: &gokeepasslib.DBContent{
+				Meta: gokeepasslib.NewMetaData(),
+				Root: &gokeepasslib.RootData{
+					Groups: []gokeepasslib.Group{rootGroup},
+				},
+			},
+		}
+
+	} else {
+		dbFile, err = os.Open(fpath)
+		if err != nil {
+			return err
+		}
+		defer dbFile.Close()
+
+		sl.db = gokeepasslib.NewDatabase()
+		sl.db.Credentials = gokeepasslib.NewPasswordCredentials(sl.Credential)
+		_ = gokeepasslib.NewDecoder(dbFile).Decode(sl.db)
+	}
 
 	return nil
 }
