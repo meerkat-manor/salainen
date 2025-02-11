@@ -51,7 +51,7 @@
             "name": "Bitwarden",
             "custom": {
                 "ApiUrl": "http://localhost:8087",
-                "IdentityUrl": "",
+                "IdentityURL": "",
                 "AccessToken" : "wincred:test_BW"
             }
         }

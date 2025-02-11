@@ -17,7 +17,7 @@ import (
 
 type f struct {
 	ApiUrl      string
-	IdentityUrl string
+	IdentityURL string
 	AccessToken string
 	ProductName string // Name couldbe VaultWarden, BitWarden or compatible
 }
@@ -68,9 +68,9 @@ func (sl *f) Init(custom interface{}) error {
 			sl.ApiUrl = value.(string)
 		}
 
-		value, exists = settings["IdentityUrl"]
+		value, exists = settings["IdentityURL"]
 		if exists && value.(string) != "" {
-			sl.IdentityUrl = value.(string)
+			sl.IdentityURL = value.(string)
 		}
 
 		value, exists = settings["AccessToken"]
@@ -214,8 +214,13 @@ func (sl *f) Help() {
 	fmt.Printf("\n")
 	fmt.Printf("The pre-requisite is that you are running 'bw serve' locally\n")
 	fmt.Printf("and have configured the settings for salainen.\n")
-	fmt.Printf("The settings include your Bitwarden password as a 'wincred:' location.\n")
-	fmt.Printf("as an example.\n")
+	fmt.Printf("Only one Bitwarden source can be defined , the value of which\n")
+	fmt.Printf("in the 'ApiURL' and 'IdentityURL' configuration settings.\n")
+	fmt.Printf("The master password is in the configuration under 'AccessToken'.\n")
+	fmt.Printf("The access token is processed as a 'salainen` value so.\n")
+	fmt.Printf("define it using the format '<provider>:<key>' where you could\n")
+	fmt.Printf("use for example 'plain:masterpassword' or 'keyring:secretkey \n")
+	fmt.Printf("You cannot use 'bitwarden:password' as that would cause an infinite loop.\n")
 	fmt.Printf("The provider is only available on platforms supported by Bitwarden bw\n")
 	fmt.Printf("Compatible password managers: Vaultwarden\n")
 	fmt.Printf("\n")

@@ -1,6 +1,8 @@
 module github.com/meerkat-manor/salainen
 
-go 1.19.3
+go 1.23.0
+
+toolchain go1.23.4
 
 require (
 	github.com/danieljoos/wincred v1.2.2
@@ -9,9 +11,11 @@ require (
 	github.com/hashicorp/vault/api v1.15.0
 	github.com/manifoldco/promptui v0.9.0
 	github.com/oapi-codegen/runtime v1.1.1
+	github.com/tobischo/gokeepasslib/v3 v3.6.1
 	github.com/xdg-go/pbkdf2 v1.0.0
+	github.com/zalando/go-keyring v0.2.6
 	golang.design/x/clipboard v0.7.0
-	golang.org/x/crypto v0.32.0
+	golang.org/x/crypto v0.33.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -42,13 +46,13 @@ require (
 	github.com/oasdiff/yaml3 v0.0.0-20241210130736-a94c01f36349 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
-	github.com/zalando/go-keyring v0.2.6 // indirect
-	golang.org/x/exp v0.0.0-20190731235908-ec7cb31e5a56 // indirect
-	golang.org/x/image v0.6.0 // indirect
-	golang.org/x/mobile v0.0.0-20230301163155-e0f57694e12c // indirect
+	github.com/tobischo/argon2 v0.1.0 // indirect
+	golang.org/x/exp/shiny v0.0.0-20250207012021-f9890c6ad9f3 // indirect
+	golang.org/x/image v0.14.0 // indirect
+	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
 	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
