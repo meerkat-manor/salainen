@@ -3,6 +3,14 @@
 If you are saving your secrets in Bitwarden, then 
 use this secret storage definition.
 
+You will need to have access to the Bitwarden local
+server, not the remote hosted version.  To do this you need
+to download the "bw.exe" and execute it locally
+
+```bash
+bw serve
+```
+
 ## Configuration
 
 As the Bitwarden service is accessed via an API
@@ -34,7 +42,60 @@ in a keyring or environment variable.
 
 The keyring or environment variable can be
 accessed using **salainen** so you must supply in the
-format "<provider>:<key>".  Some examples are:
+format "provider:key".  Some examples are:
 
-* plain:not_secure_password
-* keyring:keepass_secret
+* env:variable_name
+* keyring:bitwarden_secret
+
+
+
+## Golang Package
+
+To set the secret value you call the function in your Go code as:
+
+```go
+salainen.Set("bitwarden:<key>", "<value>")
+```
+
+This will use the default configuration and without 
+a ``salainen.json`` or ``salainen.yml`` being in the current file 
+search path or your home directory, it will enable **bitwarden**
+variables and files.
+
+The prefix value **bitwarden** indicates that this is a 
+Bitwarden storage location secret.
+
+If you call the register function with a configuration file location
+then the sequence of calls is:
+
+```go
+salainen.Register("<config file>")
+err := salainen.Set("bitwarden:<key>", "<value>")
+```
+
+To fetch the secret, which could have been set outside of the
+Go program, you get:
+
+```go
+salainen.Register("<config file>")
+secret_value, err := salainen.Get("bitwarden:<key>", "<value>")
+```
+
+## Command line
+
+To set the secret outside of your program or script 
+the use the "Set" function like so:
+
+```
+salainen 'bitwarden:MY_SECRET' 'secretvalue'
+```
+
+You can retrieve the secret value like so:
+
+```
+salainen 'bitwarden:MY_SECRET'
+```
+
+and the output is piped to the standard output, like terminal.
+If there is an error then the program exit code is non zero (0)
+

@@ -3,6 +3,18 @@
 Implements the system keyring, which is found as a capability
 on Linux and macOS.
 
+Sample configuration entry:
+
+```json
+        "keyring": {
+            "enabled": true,
+            "name": "Keyring",
+            "custom": {
+                "Service": "{{.ProductName}}"
+            }
+        },
+```
+
 ## Golang Package
 
 To set the secret value you call the function in your Go code as:

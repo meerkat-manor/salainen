@@ -36,7 +36,6 @@
                 "RootPath": "~/.secrets/salainen/efile",
                 "Algorithm": ""
             }
-
         },
         "keyring": {
             "enabled": true,

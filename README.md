@@ -66,8 +66,14 @@ An example configuration file is:
 ```json
 {
     "name": "salainen",
-    "version": "0.0.1",
+    "version": "0.0.4",
     "storage": {
+        "plain": {
+            "enabled": true,
+            "name": "Plain text",
+            "custom": {
+            }
+        },
         "env": {
             "enabled": true,
             "name": "Environmental Variables",

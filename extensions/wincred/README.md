@@ -6,6 +6,21 @@ on Microsoft Windows.
 If you intend to use the software on multiple OS platforms, then the **keyring**
 secret storage is a better alternative.
 
+Sample configuration entry:
+
+```json
+        "wincred": {
+            "enabled": true,
+            "name": "Windows Credential Manager",
+            "custom": {
+                "Prefix": "{{.ProductName}}"
+            }
+        },
+```
+
+The prefix value is added to the key value used when fetching or 
+writing the secret.
+
 ## Golang Package
 
 To set the secret value you call the function in your Go code as:
