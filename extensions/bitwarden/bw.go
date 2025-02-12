@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 
@@ -101,28 +100,28 @@ func (sl *f) Get(path string) (string, error) {
 	server := sl.ApiUrl
 
 	if sl.AccessToken == "" {
-		log.Fatalf("no access token for %s provided", sl.ProductName)
+		return "", fmt.Errorf("no access token for %s provided", sl.ProductName)
 	}
 	if strings.HasPrefix(sl.AccessToken, "bitwarden:") {
-		log.Fatalf("error fetching %s access password with looping detected", sl.ProductName)
+		return "", fmt.Errorf("error fetching %s access password with looping detected", sl.ProductName)
 	}
 
 	password, errS := salainen.Get(sl.AccessToken)
-	if errS != nil {
-		log.Fatalf("error fetching %s access password: %v", sl.ProductName, errS)
+	if errS != nil || password == "" {
+		return "", fmt.Errorf("error fetching %s access password.  More information: %v", sl.ProductName, errS)
 	}
 
 	unlocked := false
 
 	client, errC := gen.NewClientWithResponses(server, gen.WithHTTPClient(httpClient))
 	if errC != nil {
-		log.Fatalf("error making %s client. Error: %v", sl.ProductName, errC)
+		return "", fmt.Errorf("error making %s client. Error: %v", sl.ProductName, errC)
 	}
 
 	// Check status
 	resp, err := client.GetStatus(context.Background())
 	if err != nil {
-		log.Fatalf("error with status check on %s. Error: %v", sl.ProductName, err)
+		return "", fmt.Errorf("error with status check on %s. Error: %v", sl.ProductName, err)
 	} else {
 		defer resp.Body.Close()
 		builder := new(strings.Builder)
@@ -150,21 +149,24 @@ func (sl *f) Get(path string) (string, error) {
 
 		respU, errU := client.PostUnlock(context.Background(), unlock)
 		if errU != nil {
-			log.Fatalf("error unlocking %s. Error: %v", sl.ProductName, errU)
+			return "", fmt.Errorf("error unlocking %s. Error: %v", sl.ProductName, errU)
 		} else {
 			if respU.StatusCode != 200 {
-				log.Fatalf("error unlocking %s with status code: %d", sl.ProductName, respU.StatusCode)
-				if respU.ContentLength > 0 {
-					defer respU.Body.Close()
-					builder := new(strings.Builder)
-					_, err := io.Copy(builder, respU.Body)
-					if err != nil {
-						fmt.Printf("error with reading %s response body: %v", sl.ProductName, err)
-					} else {
-						//data := builder.String()
-						//fmt.Printf("DEBUG BW get body: %s\n", data)
+				return "", fmt.Errorf("error unlocking %s with status code: %d", sl.ProductName, respU.StatusCode)
+				/*
+					// Is this needed TODO
+					if respU.ContentLength > 0 {
+						defer respU.Body.Close()
+						builder := new(strings.Builder)
+						_, err := io.Copy(builder, respU.Body)
+						if err != nil {
+							fmt.Printf("error with reading %s response body: %v", sl.ProductName, err)
+						} else {
+							//data := builder.String()
+							//fmt.Printf("DEBUG BW get body: %s\n", data)
+						}
 					}
-				}
+				*/
 			} else {
 				unlocked = true
 			}
@@ -177,7 +179,7 @@ func (sl *f) Get(path string) (string, error) {
 		if errUI == nil {
 			getData, err = sl.getItemByUUID(client, id)
 			if err != nil {
-				log.Fatalf("error fetching %s item (UUID). Error: %v", sl.ProductName, err)
+				return "", fmt.Errorf("error fetching %s item (UUID). Error: %v", sl.ProductName, err)
 			}
 		} else {
 
@@ -191,11 +193,11 @@ func (sl *f) Get(path string) (string, error) {
 				}
 				folderId, err := sl.getFolders(client, parent)
 				if err != nil {
-					log.Fatalf("error fetching %s folders (path). Error: %v", sl.ProductName, err)
+					return "", fmt.Errorf("error fetching %s folders (path). Error: %v", sl.ProductName, err)
 				}
 				getData, err = sl.getItemByFolder(client, folderId, &parts[len(parts)-1])
 				if err != nil {
-					log.Fatalf("error fetching %s item (path). Error: %v", sl.ProductName, err)
+					return "", fmt.Errorf("error fetching %s item (path). Error: %v", sl.ProductName, err)
 				}
 			}
 
@@ -224,7 +226,7 @@ func (sl *f) Help() {
 	fmt.Printf("The provider is only available on platforms supported by Bitwarden bw\n")
 	fmt.Printf("Compatible password managers: Vaultwarden\n")
 	fmt.Printf("\n")
-	fmt.Printf("For more information please see %s/extensions/bitwarden/README.md \n", salainen.SourceForgeURL)
+	fmt.Printf("For more information please see %s/extensions/bitwarden/ \n", salainen.SourceForgeURL)
 }
 
 func (sl *f) getFolders(client *gen.ClientWithResponses, folder string) (*types.UUID, error) {

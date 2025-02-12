@@ -60,7 +60,7 @@ func (sl *f) Help() {
 	fmt.Printf("As the credentials are tied to the logged in user, this\n")
 	fmt.Printf("is one of the most secure providers available with the tool.\n")
 	fmt.Printf("\n")
-	fmt.Printf("For more information please see %s/extensions/keyring/README.md \n", salainen.SourceForgeURL)
+	fmt.Printf("For more information please see %s/extensions/keyring/ \n", salainen.SourceForgeURL)
 }
 
 func New(config string, custom interface{}) (salainen.SecretStorage, error) {

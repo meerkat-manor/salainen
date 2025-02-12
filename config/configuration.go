@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -14,7 +13,9 @@ import (
 	"github.com/meerkat-manor/salainen/extensions/encryptedfile"
 	"github.com/meerkat-manor/salainen/extensions/env"
 	"github.com/meerkat-manor/salainen/extensions/file"
+	"github.com/meerkat-manor/salainen/extensions/keepass"
 	"github.com/meerkat-manor/salainen/extensions/keyring"
+	"github.com/meerkat-manor/salainen/extensions/plain"
 	"github.com/meerkat-manor/salainen/extensions/promptsec"
 	"github.com/meerkat-manor/salainen/extensions/wincred"
 	"gopkg.in/yaml.v2"
@@ -42,7 +43,7 @@ type ApplicationRun struct {
 	StorageName map[string]string
 }
 
-func New(configFile string) (*ApplicationRun, error) {
+func New(configFile string, ignoreProviderErrors bool) (*ApplicationRun, error) {
 
 	// Check if config file exists
 	if configFile != "" {
@@ -120,7 +121,7 @@ func New(configFile string) (*ApplicationRun, error) {
 	if configFile != "" {
 		conf, err := loadConfig(configFile)
 		if err != nil {
-			log.Fatalf("failed to load configuration")
+			return nil, fmt.Errorf("failed to load configuration")
 		}
 
 		app.Name = conf.Name
@@ -128,56 +129,74 @@ func New(configFile string) (*ApplicationRun, error) {
 
 		for key, item := range conf.Storage {
 			if item.Enabled {
+
 				switch key {
+
+				case "plain":
+					app.StorageName[key] = item.Name
+					err := plain.Register(configFile, item.Custom)
+					if err != nil && !ignoreProviderErrors {
+						return nil, err
+					}
+
 				case "env":
 					app.StorageName[key] = item.Name
 					err := env.Register(configFile, item.Custom)
-					if err != nil {
+					if err != nil && !ignoreProviderErrors {
 						return nil, err
 					}
 
 				case "wincred":
 					app.StorageName[key] = item.Name
 					err := wincred.Register(configFile, item.Custom)
-					if err != nil {
+					if err != nil && !ignoreProviderErrors {
 						return nil, err
 					}
 
 				case "keyring":
 					app.StorageName[key] = item.Name
 					err := keyring.Register(configFile, item.Custom)
-					if err != nil {
+					if err != nil && !ignoreProviderErrors {
 						return nil, err
 					}
 
 				case "file":
 					app.StorageName[key] = item.Name
 					err := file.Register(configFile, item.Custom)
-					if err != nil {
+					if err != nil && !ignoreProviderErrors {
 						return nil, err
 					}
 
 				case "efile":
 					app.StorageName[key] = item.Name
 					err := encryptedfile.Register(configFile, item.Custom)
-					if err != nil {
+					if err != nil && !ignoreProviderErrors {
 						return nil, err
 					}
 
 				case "prompt":
 					app.StorageName[key] = item.Name
 					err := promptsec.Register(configFile, item.Custom)
-					if err != nil {
+					if err != nil && !ignoreProviderErrors {
 						return nil, err
 					}
 
 				case "bitwarden":
 					app.StorageName[key] = item.Name
 					err := bitwarden.Register(configFile, item.Custom)
-					if err != nil {
+					if err != nil && !ignoreProviderErrors {
 						return nil, err
 					}
 
+				case "keepass":
+					app.StorageName[key] = item.Name
+					err := keepass.Register(configFile, item.Custom)
+					if err != nil && !ignoreProviderErrors {
+						return nil, err
+					}
+
+				default:
+					return nil, fmt.Errorf("provider '%s' not recognized", key)
 				}
 			}
 
@@ -189,21 +208,27 @@ func New(configFile string) (*ApplicationRun, error) {
 			"Prefix": "{{.ProductName}}",
 		}
 
+		app.StorageName["plain"] = "Plain text"
+		err := plain.Register("", custom)
+		if err != nil {
+			return nil, err
+		}
+
 		app.StorageName["env"] = "Environmental Variables"
-		err := env.Register("", custom)
+		err = env.Register("", custom)
 		if err != nil {
 			return nil, err
 		}
 
 		app.StorageName["file"] = "File System"
 		err = file.Register("", nil)
-		if err != nil {
+		if err != nil && !ignoreProviderErrors {
 			return nil, err
 		}
 
 		app.StorageName["efile"] = "Encrypted File System"
 		err = encryptedfile.Register("", nil)
-		if err != nil {
+		if err != nil && !ignoreProviderErrors {
 			return nil, err
 		}
 
@@ -212,13 +237,13 @@ func New(configFile string) (*ApplicationRun, error) {
 		}
 		app.StorageName["keyring"] = "Keyring"
 		err = keyring.Register("", customKR)
-		if err != nil {
+		if err != nil && !ignoreProviderErrors {
 			return nil, err
 		}
 
 		app.StorageName["prompt"] = "Prompt"
 		err = promptsec.Register("", nil)
-		if err != nil {
+		if err != nil && !ignoreProviderErrors {
 			return nil, err
 		}
 
@@ -226,7 +251,7 @@ func New(configFile string) (*ApplicationRun, error) {
 		if runtime.GOOS == "windows" {
 			app.StorageName["wincred"] = "Windows Credential Manager"
 			err := env.Register("", custom)
-			if err != nil {
+			if err != nil && !ignoreProviderErrors {
 				return nil, err
 			}
 		}

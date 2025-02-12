@@ -26,14 +26,14 @@
             "enabled": true,
             "name": "File System",
             "custom": {
-                "RootPath": "~/.secrets/salainen"
+                "RootPath": "~/.secrets/salainen/plainfile"
             }
         },
         "efile": {
             "enabled": true,
             "name": "Encrypted File System",
             "custom": {
-                "RootPath": "~/.secrets/salainen",
+                "RootPath": "~/.secrets/salainen/efile",
                 "Algorithm": ""
             }
 
@@ -46,29 +46,29 @@
             }
         },
         "wincred": {
-            "enabled": false,
+            "enabled": true,
             "name": "Windows Credential Manager",
             "custom": {
                 "Prefix": "{{.ProductName}}"
             }
         },
+        "keepass": {
+            "enabled": true,
+            "name": "Keepass",
+            "custom": {
+                "Path": "tests/data/test_secrets.kdbx",
+                "MasterPassword" : "plain:tester01",
+                "DefaultGroup": "",
+                "PrimaryGroup": ""
+            }
+        },
         "bitwarden": {
-            "enabled": false,
+            "enabled": true,
             "name": "Bitwarden",
             "custom": {
                 "ApiUrl": "http://localhost:8087",
                 "IdentityURL": "",
                 "AccessToken" : "keyring:test_BW"
-            }
-        },
-        "keepass": {
-            "enabled": false,
-            "name": "Keepass",
-            "custom": {
-                "Path": "",
-                "MasterPassword" : "keyring:test_kp",
-                "DefaultGroup": "",
-                "PrimaryGroup": ""
             }
         }
     }

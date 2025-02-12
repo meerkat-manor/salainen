@@ -12,17 +12,19 @@ import (
 )
 
 type f struct {
-	Path         string
-	Credential   string
-	DefaultGroup string
-	PrimaryGroup string
-	db           *gokeepasslib.Database
+	ProviderName   string
+	Path           string
+	MasterPassword string
+	DefaultGroup   string
+	PrimaryGroup   string
+	db             *gokeepasslib.Database
 }
 
 const providerName = "keepass"
 
 func (sl *f) Init(custom interface{}) error {
 
+	sl.ProviderName = "Keepass" // Note the leading capital
 	sl.PrimaryGroup = salainen.ProductName + "_managed"
 
 	if custom != nil {
@@ -34,9 +36,9 @@ func (sl *f) Init(custom interface{}) error {
 				sl.Path = salainen.ProductName
 			}
 		}
-		value, exists = settings["Credential"]
+		value, exists = settings["MasterPassword"]
 		if exists && value.(string) != "" {
-			sl.Credential = value.(string)
+			sl.MasterPassword = value.(string)
 		}
 		value, exists = settings["DefaultGroup"]
 		if exists && value.(string) != "" {
@@ -48,6 +50,14 @@ func (sl *f) Init(custom interface{}) error {
 		sl.DefaultGroup = salainen.ProductName
 	}
 
+	if sl.Path == "" {
+		return fmt.Errorf("Keepass file location not specified in configuration under 'Path'")
+	}
+
+	if sl.MasterPassword == "" {
+		return fmt.Errorf("Keepass master password not specified in configuration under 'MasterPassword'")
+	}
+
 	fpath := sl.Path
 	if strings.HasPrefix(fpath, "~/") || strings.HasPrefix(fpath, "~\\") {
 		homeDir, err := os.UserHomeDir()
@@ -55,6 +65,15 @@ func (sl *f) Init(custom interface{}) error {
 			return err
 		}
 		fpath = filepath.Join(homeDir, fpath[2:])
+	}
+
+	if strings.HasPrefix(sl.MasterPassword, "keepass:") {
+		return fmt.Errorf("error fetching %s access password with looping detected", sl.ProviderName)
+	}
+
+	password, errS := salainen.Get(sl.MasterPassword)
+	if errS != nil || password == "" {
+		return fmt.Errorf("error fetching %s access password.  More information: %v", sl.ProviderName, errS)
 	}
 
 	var dbFile *os.File
@@ -75,7 +94,7 @@ func (sl *f) Init(custom interface{}) error {
 		// now create the database containing the root group
 		sl.db = &gokeepasslib.Database{
 			Header:      gokeepasslib.NewHeader(),
-			Credentials: gokeepasslib.NewPasswordCredentials(sl.Credential),
+			Credentials: gokeepasslib.NewPasswordCredentials(password),
 			Content: &gokeepasslib.DBContent{
 				Meta: gokeepasslib.NewMetaData(),
 				Root: &gokeepasslib.RootData{
@@ -92,8 +111,9 @@ func (sl *f) Init(custom interface{}) error {
 		defer dbFile.Close()
 
 		sl.db = gokeepasslib.NewDatabase()
-		sl.db.Credentials = gokeepasslib.NewPasswordCredentials(sl.Credential)
+		sl.db.Credentials = gokeepasslib.NewPasswordCredentials(password)
 		_ = gokeepasslib.NewDecoder(dbFile).Decode(sl.db)
+
 	}
 
 	return nil
@@ -110,7 +130,14 @@ func (sl *f) Put(path, value string) error {
 		kpath = npath[1]
 	}
 
-	sl.db.UnlockProtectedEntries()
+	if sl.db == nil {
+		return fmt.Errorf("internal error with Keepass database access for unlock")
+	}
+
+	errDb := sl.db.UnlockProtectedEntries()
+	if errDb != nil {
+		return errDb
+	}
 
 	// Check if we have a group
 	if len(sl.db.Content.Root.Groups) < 1 {
@@ -222,7 +249,14 @@ func (sl *f) Get(path string) (string, error) {
 		kpath = npath[1]
 	}
 
-	sl.db.UnlockProtectedEntries()
+	if sl.db == nil {
+		return "", fmt.Errorf("internal error with Keepass database access for unlock")
+	}
+
+	errDb := sl.db.UnlockProtectedEntries()
+	if errDb != nil {
+		return "", errDb
+	}
 
 	if len(sl.db.Content.Root.Groups) < 1 {
 		return "", fmt.Errorf("failed to find value for (G): %s", kpath)
@@ -250,13 +284,13 @@ func (sl *f) Help() {
 	fmt.Printf("\n")
 	fmt.Printf("Only one file can be defined for the Keepass file, the\n")
 	fmt.Printf("value of which is in the configuration under 'Path'.\n")
-	fmt.Printf("The master password is in the configuration under 'Credential'.\n")
-	fmt.Printf("The master password is processed as a 'salainen` value so.\n")
+	fmt.Printf("The master password is in the configuration under 'MasterPassword'.\n")
+	fmt.Printf("The master password is processed as a 'salainen` value so\n")
 	fmt.Printf("define it using the format '<provider>:<key>' where you could\n")
 	fmt.Printf("use for example 'plain:masterpassword' or 'keyring:secretkey \n")
 	fmt.Printf("You cannot use 'keepass:password' as that would cause an infinite loop.\n")
 	fmt.Printf("\n")
-	fmt.Printf("For more information please see %s/extensions/keepass/README.md \n", salainen.SourceForgeURL)
+	fmt.Printf("For more information please see %s/extensions/keepass/ \n", salainen.SourceForgeURL)
 }
 
 func New(config string, custom interface{}) (salainen.SecretStorage, error) {

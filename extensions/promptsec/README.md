@@ -18,7 +18,7 @@ which provides a default secret of ``secret_password`` if no value manually
 input. As the default value is fixed this method has little value.
 
 **Warning:** The above definition is not very secure and is equivalent to the
-[plain](../plain/README.md) secret storage type
+[plain](../plain/) secret storage type
 
 _OR_
 

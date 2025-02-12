@@ -9,7 +9,7 @@ import (
 func TestSimpleInit(t *testing.T) {
 
 	configFile := "../defaults.json"
-	appRun, err := config.New(configFile)
+	appRun, err := config.New(configFile, false)
 	if err != nil {
 		t.Errorf("failed to create APPRUN")
 	} else {
@@ -45,7 +45,7 @@ func TestSimpleInit(t *testing.T) {
 func TestStorage01(t *testing.T) {
 
 	configFile := "../defaults.json"
-	appRun, err := config.New(configFile)
+	appRun, err := config.New(configFile, false)
 	if err != nil {
 		t.Errorf("failed to create APPRUN")
 	} else {

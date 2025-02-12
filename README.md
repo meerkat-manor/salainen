@@ -58,7 +58,7 @@ the parent for the custom block.
 * name : The location English name.  If not supplied then the section name is used.
   This is only useful if listing available secret locations.
 * custom : A custom definition for each location.  Please refer to the location 
-  documentation for more details.  For example [file](./extensions/file/README.md)
+  documentation for more details.  For example [file](./extensions/file/)
 
 
 An example configuration file is:

@@ -17,6 +17,7 @@ func main() {
 	configFile := flag.String("config", "", "path to config file")
 	clip := flag.Bool("clip", false, "copy to clipboard the value fetched")
 	help := flag.Bool("help", false, "help information")
+	version := flag.Bool("version", false, fmt.Sprintf("%s version", salainen.ProductName))
 
 	storage := flag.Bool("storage", false, "storage request")
 
@@ -40,9 +41,18 @@ func main() {
 		return
 	}
 
-	_, err := config.New(*configFile)
+	if *version {
+		fmt.Printf("%s\n", salainen.ProductVersion)
+		os.Exit(0)
+		return
+	}
+
+	_, err := config.New(*configFile, *storage)
 	if err != nil {
-		log.Fatalf("processing aborted due to error: %v", err)
+		//log.Fatalf("processing aborted due to error: %v", err)
+		fmt.Fprint(os.Stderr, err.Error())
+		os.Exit(1)
+		return
 	}
 
 	if *storage {
@@ -71,10 +81,12 @@ func main() {
 			}
 		case "version":
 			{
-				fmt.Printf("0.0.1\n")
+				fmt.Printf("%s\n", salainen.ProductVersion)
 				os.Exit(0)
 				return
 			}
+		default:
+			// Ignore and continue processing
 		}
 	}
 
@@ -131,14 +143,14 @@ func process_storage(configFile *string, args []string) error {
 	if len(args) > 0 {
 		match := false
 		name := strings.ToLower(args[0])
-		app, err := config.New(*configFile)
+		app, err := config.New(*configFile, true)
 
 		if err == nil {
 			for key, item := range app.StorageName {
 				if strings.ToLower(key) == name {
 					sstorage, err := salainen.GetSecretStorage(key)
 					if err != nil {
-						log.Fatalf("processing aborted due to error: %v", err)
+						return fmt.Errorf("processing aborted due to error: %v", err)
 					}
 					fmt.Printf("Usage information for secret storage provider '%s' (%s) follows\n\n", name, item)
 					sstorage.Help()
@@ -185,13 +197,13 @@ func PrintUsage() {
 
 	fmt.Fprintf(os.Stderr, "\nDefining a configuration file allows control over type settings, such as Vault server\n")
 
-	fmt.Fprintf(os.Stderr, "\nFor more information see https://github.com/meerkat-manor/salainen/cmd\n")
+	fmt.Fprintf(os.Stderr, "\nFor more information see %s/cmd\n", salainen.SourceForgeURL)
 	fmt.Fprintf(os.Stderr, "\n(c) Copyright 2025 Merebox\n")
 }
 
 func PrintStorageTypes(configFile *string) {
 	fmt.Fprintf(os.Stderr, "\nStorage types configured from: %s\n", *configFile)
-	app, err := config.New(*configFile)
+	app, err := config.New(*configFile, true)
 	if err != nil {
 		log.Fatalf("processing aborted due to error: %v", err)
 	}
@@ -206,7 +218,7 @@ func PrintStorageTypes(configFile *string) {
 func PrintStorageHelp(configFile *string) {
 	fmt.Fprintf(os.Stderr, "\nFor storage typeinformation help supply the name\n")
 	fmt.Fprintf(os.Stderr, "\nStorage types configured from: %s\n", *configFile)
-	app, err := config.New(*configFile)
+	app, err := config.New(*configFile, true)
 	if err != nil {
 		log.Fatalf("processing aborted due to error: %v", err)
 	}

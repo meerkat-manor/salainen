@@ -8,7 +8,7 @@ func TestSimpleInit(t *testing.T) {
 
 	configFile := "../defaults.json"
 
-	appRun, err := New(configFile)
+	appRun, err := New(configFile, false)
 	if err != nil {
 		t.Errorf("failed to create APPRUN")
 	} else {
