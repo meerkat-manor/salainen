@@ -33,7 +33,7 @@ type ApplicationConfiguration struct {
 	Name    string `yaml:"name" json:"name"`
 	Version string `yaml:"version" json:"version"`
 
-	Storage map[string]StorageConfiguration `yaml:"storage" json:"storage"`
+	Storage map[string]StorageConfiguration `yaml:"providers" json:"providers"`
 }
 
 type ApplicationRun struct {

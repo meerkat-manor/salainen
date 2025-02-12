@@ -51,11 +51,11 @@ func (sl *f) Init(custom interface{}) error {
 	}
 
 	if sl.Path == "" {
-		return fmt.Errorf("Keepass file location not specified in configuration under 'Path'")
+		return fmt.Errorf("keepass file location not specified in configuration under 'Path'")
 	}
 
 	if sl.MasterPassword == "" {
-		return fmt.Errorf("Keepass master password not specified in configuration under 'MasterPassword'")
+		return fmt.Errorf("keepass master password not specified in configuration under 'MasterPassword'")
 	}
 
 	fpath := sl.Path

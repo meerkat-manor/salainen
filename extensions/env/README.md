@@ -19,7 +19,7 @@ search path or your home directory, it will enable **environmental**
 variables and files.
 
 The prefix value **env** indicates that this is an environmental 
-storage location secret.
+provider secret.
 
 If you call the register function with a configuration file location
 then the sequence of calls is:

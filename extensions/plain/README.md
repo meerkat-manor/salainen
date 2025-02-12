@@ -20,4 +20,4 @@ during development.
 ## Configuration and usage
 
 The put or save action for ``plain`` is not available as there is no
-secret storage location just a definition.
+secret provider just a definition.

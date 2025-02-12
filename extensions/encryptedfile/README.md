@@ -40,7 +40,7 @@ a ``salainen.json`` or ``salainen.yml`` being in the current file
 search path or your home directory, it will enable **efile**
 variables and files.
 
-The prefix value **efile** indicates that this is an encrypted file storage location secret.
+The prefix value **efile** indicates that this is an encrypted file provider secret.
 
 If you call the register function with a configuration file location
 then the sequence of calls is:

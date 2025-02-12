@@ -47,5 +47,5 @@ teh value is accepted.  This can include:
 
 The validation is defined by a Golang regex expression.
 
-The put or save action for ``prompt`` is not available as there is no
-secret storage location just a definition.
+The put (save) action for ``prompt`` is not available as there is no
+secret provider just a definition.

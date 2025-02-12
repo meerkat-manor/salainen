@@ -1,18 +1,18 @@
 # Salainen
 
 **Salinen** is a simplistic Go secrets manager whose objective is to provide
-a consistent interface to retrieving secrets from various storage locations.
+a consistent interface to retrieving secrets from various providers.
 
-The storage locations supported are:
+The providers supported are:
 
-* Environment variables (*1)
-* Files (*1)
+* Environment variables
+* Files and Encrypted files
+* Keyring
 * Windows credential manager (Windows)
+* Keepass
 * Bitwarden / Vaultwarden
 * User prompt on terminal
-* Text strings
-
-(*1) Contents can be encrypted
+* Plain text strings
 
 Go programs can include the ``salainen`` package into code.
 
@@ -45,8 +45,8 @@ JSON or YAML format.  Please use only the extensions ``.json'`,
 ``.yaml`` or ``.yml` for your configuration files.
 
 
-The secret storage location is defined as an entry on a``map[string]interface{}``
-and the map name is the storage location identifier.
+The secret provider is defined as an entry on a``map[string]interface{}``
+and the map name is the provider identifier.
 
 The configuration settings are different for each location and are set in
 the custom block.  The following settings are applicable to all locations and are 
@@ -67,7 +67,7 @@ An example configuration file is:
 {
     "name": "salainen",
     "version": "0.0.4",
-    "storage": {
+    "providers": {
         "plain": {
             "enabled": true,
             "name": "Plain text",
@@ -139,7 +139,7 @@ search path or your home directory, it will enable **environmental**
 variables and files.
 
 The prefix value **env** indicates that this is an environmental 
-storage location secret.
+provider secret.
 
 If you call the register function with a configuration file location
 then the sequence of calls is:
@@ -167,7 +167,7 @@ search path or your home directory, it will enable **environmental**
 variables and files.
 
 The prefix value **env** indicates that this is an environmental 
-storage location secret.
+provider secret.
 
 If you call the register function with a configuration file location
 then the sequence of calls is:  
@@ -195,13 +195,11 @@ And to retrieve it is:
 salainen env:my_secret
 ```
 
-## Future storage locations
+## Future providers
 
 There are planned enhancements to support further
-storage locations such as:
+providers such as:
 
-* Keyring (Linux)
-* Keepass
 * Git ( a variation on encrypted file )
 * HashiCorp Vault
-* Database (*1)
+* Database

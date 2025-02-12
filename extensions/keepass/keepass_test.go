@@ -4,13 +4,30 @@ import (
 	"fmt"
 	"os"
 	"testing"
+
+	"github.com/meerkat-manor/salainen/extensions/plain"
 )
+
+var internalInit = false
+
+func testInit() {
+
+	if !internalInit {
+
+		configFile := "../../defaults.json"
+		plain.Register(configFile, nil)
+		internalInit = true
+
+	}
+
+}
 
 func TestSimpleKPCreate(t *testing.T) {
 
+	testInit()
 	custom := map[string]any{
 		"Path":           fmt.Sprintf("../../tests/data/test_secrets.kdbx"),
-		"MasterPassword": "tester01",
+		"MasterPassword": "plain:tester01",
 	}
 
 	sto, err := New("", custom)
@@ -28,9 +45,10 @@ func TestSimpleKPCreate(t *testing.T) {
 
 func TestSimpleKPPutGet(t *testing.T) {
 
+	testInit()
 	custom := map[string]any{
 		"Path":           fmt.Sprintf("../../tests/data/test_secrets.kdbx"),
-		"MasterPassword": "tester01",
+		"MasterPassword": "plain:tester01",
 	}
 	//custom["Path"] = `C:\tmp\salainen\tests\data\test_secrets.kdbx.testexec.kdbx`
 
@@ -70,9 +88,10 @@ func TestSimpleKPPutGet(t *testing.T) {
 
 func TestGroupKPPutGet(t *testing.T) {
 
+	testInit()
 	custom := map[string]any{
 		"Path":           fmt.Sprintf("../../tests/data/test_secrets.kdbx"),
-		"MasterPassword": "tester01",
+		"MasterPassword": "plain:tester01",
 		"DefaultGroup":   "my_other_group",
 	}
 
@@ -126,9 +145,10 @@ func TestGroupKPPutGet(t *testing.T) {
 
 func TestGroupNextKPPutGet(t *testing.T) {
 
+	testInit()
 	custom := map[string]any{
 		"Path":           fmt.Sprintf("../../tests/data/test_secrets.kdbx"),
-		"MasterPassword": "tester01",
+		"MasterPassword": "plain:tester01",
 		"DefaultGroup":   "my_other_group",
 	}
 
@@ -182,9 +202,10 @@ func TestGroupNextKPPutGet(t *testing.T) {
 
 func TestGroupEmptyKPPutGet(t *testing.T) {
 
+	testInit()
 	custom := map[string]any{
 		"Path":           fmt.Sprintf("../../tests/data/test_secrets.kdbx"),
-		"MasterPassword": "tester01",
+		"MasterPassword": "plain:tester01",
 		"DefaultGroup":   "my_other_group",
 	}
 
@@ -238,11 +259,12 @@ func TestGroupEmptyKPPutGet(t *testing.T) {
 
 func TestNewFileGet(t *testing.T) {
 
+	testInit()
 	keepassFile := fmt.Sprintf("../../tests/data/test_secrets_new.kdbx")
 
 	custom := map[string]any{
 		"Path":           keepassFile,
-		"MasterPassword": "tester02",
+		"MasterPassword": "plain:tester02",
 		"DefaultGroup":   "my_new_group",
 	}
 

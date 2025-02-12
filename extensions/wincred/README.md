@@ -32,12 +32,12 @@ salainen.Set("wincred:<key>", "<value>")
 This will use the default configuration and without 
 a ``salainen.json`` or ``salainen.yml`` being in the current file 
 search path or your home directory, it will enable **wincred**
-variables and files.
+variables and files on Microsoft Windows.
 
 _Note_: This storage method is only intended for Microsoft Windows.
 
 The prefix value **wincred** indicates that this is a Windows Managed 
-Credential storage location secret.
+Credential provider secret.
 
 If you call the register function with a configuration file location
 then the sequence of calls is:

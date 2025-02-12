@@ -19,7 +19,7 @@ func main() {
 	help := flag.Bool("help", false, "help information")
 	version := flag.Bool("version", false, fmt.Sprintf("%s version", salainen.ProductName))
 
-	storage := flag.Bool("storage", false, "storage request")
+	providers := flag.Bool("provider", false, "provider request")
 
 	sync := flag.NewFlagSet("sync", flag.ExitOnError)
 	fromStorage := sync.String("from", "", "from source storage")
@@ -34,7 +34,7 @@ func main() {
 
 		// If there is config file then list storage types
 		if *configFile != "" {
-			PrintStorageTypes(configFile)
+			ProviderStorageTypes(configFile)
 		}
 
 		os.Exit(0)
@@ -47,7 +47,7 @@ func main() {
 		return
 	}
 
-	_, err := config.New(*configFile, *storage)
+	_, err := config.New(*configFile, *providers)
 	if err != nil {
 		//log.Fatalf("processing aborted due to error: %v", err)
 		fmt.Fprint(os.Stderr, err.Error())
@@ -55,7 +55,7 @@ func main() {
 		return
 	}
 
-	if *storage {
+	if *providers {
 		err = process_storage(configFile, flag.Args())
 		if err != nil {
 			fmt.Fprint(os.Stderr, err.Error())
@@ -165,7 +165,7 @@ func process_storage(configFile *string, args []string) error {
 		return nil
 
 	} else {
-		PrintStorageHelp(configFile)
+		PrintProviderHelp(configFile)
 		return nil
 	}
 
@@ -177,15 +177,15 @@ func PrintUsage() {
 	fmt.Fprintf(os.Stderr, "\nMore command line information:\n")
 
 	fmt.Fprintf(os.Stderr, "The secret key is mad up of two parts:\n")
-	fmt.Fprintf(os.Stderr, "\t* storage type\n")
-	fmt.Fprintf(os.Stderr, "\t* storage path (within the type)\n")
+	fmt.Fprintf(os.Stderr, "\t* provider type\n")
+	fmt.Fprintf(os.Stderr, "\t* storage path (within the provider)\n")
 	fmt.Fprintf(os.Stderr, "The key takes the form of <type>:<path>, that is separated by colon (:)\n")
 
 	fmt.Fprintf(os.Stderr, "If you only supply the <secret key> then this is a get secret action\n")
 	fmt.Fprintf(os.Stderr, "If you supply the <secret key> and <secret value> then this is a set action of a secret\n\n")
 	fmt.Fprintf(os.Stderr, "Using the -clip flag during secret get saves the value to the clipboard\n")
-	fmt.Fprintf(os.Stderr, "You can provide a configuration file for setting storage attributes\n")
-	fmt.Fprintf(os.Stderr, "Storage attributes are custom to each type\n")
+	fmt.Fprintf(os.Stderr, "You can provide a configuration file for setting provider attributes\n")
+	fmt.Fprintf(os.Stderr, "Provider attributes are custom to each type\n")
 
 	fmt.Fprintf(os.Stderr, "\nSample commands are:\n")
 	fmt.Fprintf(os.Stderr, "\tsalainen wincred:db_password secret  --- saves the 'secret' to Windows credential under key db_password\n")
@@ -201,8 +201,8 @@ func PrintUsage() {
 	fmt.Fprintf(os.Stderr, "\n(c) Copyright 2025 Merebox\n")
 }
 
-func PrintStorageTypes(configFile *string) {
-	fmt.Fprintf(os.Stderr, "\nStorage types configured from: %s\n", *configFile)
+func ProviderStorageTypes(configFile *string) {
+	fmt.Fprintf(os.Stderr, "\nProvider types configured from: %s\n", *configFile)
 	app, err := config.New(*configFile, true)
 	if err != nil {
 		log.Fatalf("processing aborted due to error: %v", err)
@@ -215,9 +215,9 @@ func PrintStorageTypes(configFile *string) {
 	fmt.Fprintf(os.Stderr, "\n(c) Copyright 2024 Merebox\n")
 }
 
-func PrintStorageHelp(configFile *string) {
-	fmt.Fprintf(os.Stderr, "\nFor storage typeinformation help supply the name\n")
-	fmt.Fprintf(os.Stderr, "\nStorage types configured from: %s\n", *configFile)
+func PrintProviderHelp(configFile *string) {
+	fmt.Fprintf(os.Stderr, "\nFor provider type information help include the name as argument\n")
+	fmt.Fprintf(os.Stderr, "\nProvider types configured from: %s\n", *configFile)
 	app, err := config.New(*configFile, true)
 	if err != nil {
 		log.Fatalf("processing aborted due to error: %v", err)

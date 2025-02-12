@@ -28,7 +28,7 @@ a ``salainen.json`` or ``salainen.yml`` being in the current file
 search path or your home directory, it will enable **keyring**
 variables and files.
 
-The prefix value **keyring** indicates that this is a keyring storage location secret.
+The prefix value **keyring** indicates that this is a keyring provider secret.
 
 If you call the register function with a configuration file location
 then the sequence of calls is:

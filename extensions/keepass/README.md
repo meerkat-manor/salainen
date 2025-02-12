@@ -1,6 +1,6 @@
-# Keypass secret storage
+# Keepass secret storage
 
-If you are saving your secrets in Keypass, then 
+If you are saving your secrets in Keepass, then 
 use this secret storage definition.
 
 ## Configuration
@@ -38,13 +38,11 @@ To set the secret value you call the function in your Go code as:
 salainen.Set("keepass:<key>", "<value>")
 ```
 
-This will use the default configuration and without 
-a ``salainen.json`` or ``salainen.yml`` being in the current file 
-search path or your home directory, it will enable **keepass**
-variables and files.
+You will need to enable the **keepass** provider
+in you configuration file as it is not enabled by default.
 
 The prefix value **keepass** indicates that this is a 
-Keepass storage location secret.
+Keepass provider secret.
 
 If you call the register function with a configuration file location
 then the sequence of calls is:

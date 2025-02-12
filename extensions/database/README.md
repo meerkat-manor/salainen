@@ -1,3 +1,3 @@
 # Database secret storage
 
-Future secret storage location.
+Future secret provider.

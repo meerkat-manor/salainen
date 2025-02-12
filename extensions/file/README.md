@@ -33,7 +33,7 @@ a ``salainen.json`` or ``salainen.yml`` being in the current file
 search path or your home directory, it will enable **file**
 variables and files.
 
-The prefix value **file** indicates that this is a file storage location secret.
+The prefix value **file** indicates that this is a file provider secret.
 
 If you call the register function with a configuration file location
 then the sequence of calls is:

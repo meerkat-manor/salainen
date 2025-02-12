@@ -7,15 +7,15 @@ import (
 )
 
 const (
-	StorageSeparator byte   = ':'
-	SaneDefaults     bool   = true
-	ProductName      string = "salainen"
-	ProductVersion   string = "v0.0.4"
-	SourceForgeURL   string = "https://github.com/meerkat-manor/salainen/tree/main"
+	ProviderSeparator byte   = ':'
+	SaneDefaults      bool   = true
+	ProductName       string = "salainen"
+	ProductVersion    string = "v0.0.5"
+	SourceForgeURL    string = "https://github.com/meerkat-manor/salainen/tree/main"
 )
 
 var (
-	ErrInvalidStorage      = errors.New("invalid storage. Maybe it has not been added")
+	ErrInvalidProvider     = errors.New("invalid provider. Maybe it has not been added")
 	ErrNoSuchSecret        = errors.New("no such secret")
 	ErrAmbigiousSecret     = errors.New("ambigious secret, provide a subpath after ;")
 	ErrInvalidSecret       = errors.New("invalid secret data detected")
@@ -72,7 +72,7 @@ func GetSecretStorage(id string) (SecretStorage, error) {
 
 	storage, exists := SecretStorages[id]
 	if !exists {
-		return nil, ErrInvalidStorage
+		return nil, ErrInvalidProvider
 	}
 
 	return storage, nil
@@ -99,14 +99,14 @@ func SearchSecretStorage(id string) (SecretStorage, string, error) {
 		}
 	}
 
-	idx := strings.IndexByte(id, StorageSeparator)
+	idx := strings.IndexByte(id, ProviderSeparator)
 	if idx < 1 {
-		return nil, "", ErrInvalidStorage
+		return nil, "", ErrInvalidProvider
 	}
 
 	storage, exists := SecretStorages[id[:idx]]
 	if !exists {
-		return nil, "", ErrInvalidStorage
+		return nil, "", ErrInvalidProvider
 	}
 
 	return storage, id[idx+1:], nil
