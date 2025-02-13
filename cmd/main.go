@@ -132,7 +132,9 @@ func process_default(clip bool, args []string) error {
 		return nil
 
 	default:
-		fmt.Fprintf(os.Stderr, "salainen [path] [value]\n")
+		fmt.Fprintf(os.Stderr, "Please use argument 'salainen -help' for assistance\n")
+		fmt.Fprintf(os.Stderr, "Common format is 'salainen provider:path [value]'\n")
+		fmt.Fprintf(os.Stderr, "To list providers use 'salainen -provider'\n")
 		return fmt.Errorf("wrong parameters (%d)", len(args))
 	}
 
@@ -176,7 +178,7 @@ func PrintUsage() {
 	flag.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "\nMore command line information:\n")
 
-	fmt.Fprintf(os.Stderr, "The secret key is mad up of two parts:\n")
+	fmt.Fprintf(os.Stderr, "The secret key is made up of two parts:\n")
 	fmt.Fprintf(os.Stderr, "\t* provider type\n")
 	fmt.Fprintf(os.Stderr, "\t* storage path (within the provider)\n")
 	fmt.Fprintf(os.Stderr, "The key takes the form of <type>:<path>, that is separated by colon (:)\n")

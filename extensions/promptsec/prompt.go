@@ -46,7 +46,12 @@ func (sl *f) Get(path string) (string, error) {
 }
 
 func (sl *f) Help() {
-	fmt.Printf("Prompt help\n")
+	fmt.Printf("Prompt help\n\n")
+	fmt.Printf("A user can be prompted for input of the secret\n")
+	fmt.Printf("from a terminal.  This is not intended to be used\n")
+	fmt.Printf("in a headless environment.\n")
+	fmt.Printf("\n")
+	fmt.Printf("For more information please see %s/extensions/promptsec/ \n", salainen.SourceForgeURL)
 }
 
 func New(config string, custom interface{}) (salainen.SecretStorage, error) {

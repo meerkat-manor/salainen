@@ -55,7 +55,7 @@ func (sl *f) Get(path string) (string, error) {
 func (sl *f) Help() {
 	fmt.Printf("Keyring help\n\n")
 	fmt.Printf("The Keyring can be used as a secret provider by using\n")
-	fmt.Printf(" the prefix 'keyring:' followed by the key to the secret\n")
+	fmt.Printf("the prefix 'keyring:' followed by the key path to the secret\n")
 	fmt.Printf("\n")
 	fmt.Printf("As the credentials are tied to the logged in user, this\n")
 	fmt.Printf("is one of the most secure providers available with the tool.\n")

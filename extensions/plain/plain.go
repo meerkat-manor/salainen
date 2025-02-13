@@ -25,7 +25,12 @@ func (sl *f) Get(path string) (string, error) {
 }
 
 func (sl *f) Help() {
-	fmt.Printf("Plain help\n")
+	fmt.Printf("Plain help\n\n")
+	fmt.Printf("A plain text value can be used, but this does not provide\n")
+	fmt.Printf("any level of secret security as the path value is the\n")
+	fmt.Printf("the secret.  You cannot save / set a plain text secret.\n")
+	fmt.Printf("\n")
+	fmt.Printf("For more information please see %s/extensions/plain/ \n", salainen.SourceForgeURL)
 }
 
 func New(config string, custom interface{}) (salainen.SecretStorage, error) {
