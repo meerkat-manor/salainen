@@ -7,7 +7,7 @@ import (
 
 func TestSimpleFileCreate(t *testing.T) {
 
-	custom := map[string]any{
+	custom := map[string]string{
 		"RootPath": fmt.Sprintf("~/.secrets/test_%s", "salainen"),
 	}
 
@@ -26,7 +26,7 @@ func TestSimpleFileCreate(t *testing.T) {
 
 func TestSimpleFilePutGet(t *testing.T) {
 
-	custom := map[string]any{
+	custom := map[string]string{
 		"RootPath": fmt.Sprintf("~/.secrets/test_%s", "salainen"),
 	}
 

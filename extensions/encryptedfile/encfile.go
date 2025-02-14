@@ -35,21 +35,22 @@ func (sl *f) Init(custom interface{}) error {
 	sl.Algorithm = ChaCha20Poly1305
 
 	if custom != nil {
-		settings := custom.(map[string]interface{})
+		if settings, ok := custom.(map[string]string); ok {
 
-		value, exists := settings["RootPath"]
-		if exists && value.(string) != "" {
-			sl.RootPath = value.(string)
-		}
+			value, exists := settings["RootPath"]
+			if exists && value != "" {
+				sl.RootPath = value
+			}
 
-		value, exists = settings["Algorithm"]
-		if exists && value.(string) != "" {
-			algo := value.(string)
-			switch algo {
-			case "ChaCha20-Poly1305":
-				sl.Algorithm = ChaCha20Poly1305
-			default:
-				return fmt.Errorf("encryption algorithm not recognized")
+			value, exists = settings["Algorithm"]
+			if exists && value != "" {
+				algo := value
+				switch algo {
+				case "ChaCha20-Poly1305":
+					sl.Algorithm = ChaCha20Poly1305
+				default:
+					return fmt.Errorf("encryption algorithm not recognized")
+				}
 			}
 		}
 	}

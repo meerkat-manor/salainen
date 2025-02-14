@@ -1,13 +1,12 @@
 package salainen
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
 
 const (
-	ProviderSeparator byte   = ':'
+	ProviderSeparator string = ":"
 	SaneDefaults      bool   = true
 	ProductName       string = "salainen"
 	ProductVersion    string = "v0.0.6"
@@ -15,12 +14,12 @@ const (
 )
 
 var (
-	ErrInvalidProvider     = errors.New("invalid provider. Maybe it has not been added")
-	ErrNoSuchSecret        = errors.New("no such secret")
-	ErrAmbigiousSecret     = errors.New("ambigious secret, provide a subpath after ;")
-	ErrInvalidSecret       = errors.New("invalid secret data detected")
-	ErrInvalidSecretAccess = errors.New("invalid secret access")
-	ErrUnableToSave        = errors.New("unable to save secret")
+	ErrInvalidProvider     = fmt.Errorf("invalid provider. Maybe it has not been added")
+	ErrNoSuchSecret        = fmt.Errorf("no such secret")
+	ErrAmbiguousSecret     = fmt.Errorf("ambiguous secret, provide a subpath after %s", ProviderSeparator)
+	ErrInvalidSecret       = fmt.Errorf("invalid secret data detected")
+	ErrInvalidSecretAccess = fmt.Errorf("invalid secret access")
+	ErrUnableToSave        = fmt.Errorf("unable to save secret")
 )
 
 type SecretStorage interface {
@@ -99,7 +98,7 @@ func SearchSecretStorage(id string) (SecretStorage, string, error) {
 		}
 	}
 
-	idx := strings.IndexByte(id, ProviderSeparator)
+	idx := strings.Index(id, ProviderSeparator)
 	if idx < 1 {
 		return nil, "", ErrInvalidProvider
 	}

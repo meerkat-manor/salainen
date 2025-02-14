@@ -17,12 +17,13 @@ const providerName = "keyring"
 func (sl *f) Init(custom interface{}) error {
 
 	if custom != nil {
-		settings := custom.(map[string]interface{})
-		value, exists := settings["Service"]
-		if exists && value.(string) != "" {
-			sl.Service = value.(string)
-			if sl.Service == "{{.ProductName}}" {
-				sl.Service = salainen.ProductName
+		if settings, ok := custom.(map[string]string); ok {
+			value, exists := settings["Service"]
+			if exists && value != "" {
+				sl.Service = value
+				if sl.Service == "{{.ProductName}}" {
+					sl.Service = salainen.ProductName
+				}
 			}
 		}
 	}

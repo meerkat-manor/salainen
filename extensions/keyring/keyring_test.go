@@ -7,7 +7,7 @@ import (
 
 func TestSimpleKeyringCreate(t *testing.T) {
 
-	custom := map[string]any{
+	custom := map[string]string{
 		"Service": fmt.Sprintf("test_%s", "salainen"),
 	}
 
@@ -26,7 +26,7 @@ func TestSimpleKeyringCreate(t *testing.T) {
 
 func TestSimpleKeyringPutGet(t *testing.T) {
 
-	custom := map[string]any{
+	custom := map[string]string{
 		"Prefix": fmt.Sprintf("test_%s", "salainen"),
 	}
 

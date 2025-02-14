@@ -49,8 +49,7 @@ func main() {
 
 	_, err := config.New(*configFile, *providers)
 	if err != nil {
-		//log.Fatalf("processing aborted due to error: %v", err)
-		fmt.Fprint(os.Stderr, err.Error())
+		fmt.Fprint(os.Stderr, err.Error()+"\n")
 		os.Exit(1)
 		return
 	}
@@ -58,7 +57,7 @@ func main() {
 	if *providers {
 		err = process_storage(configFile, flag.Args())
 		if err != nil {
-			fmt.Fprint(os.Stderr, err.Error())
+			fmt.Fprint(os.Stderr, err.Error()+"\n")
 			os.Exit(1)
 		} else {
 			os.Exit(0)
@@ -162,7 +161,7 @@ func process_storage(configFile *string, args []string) error {
 			}
 		}
 		if !match {
-			return fmt.Errorf("secret storage provider '%s' not recognised", name)
+			return fmt.Errorf("secret storage provider '%s' not recognized", name)
 		}
 		return nil
 
@@ -180,8 +179,8 @@ func PrintUsage() {
 
 	fmt.Fprintf(os.Stderr, "The secret key is made up of two parts:\n")
 	fmt.Fprintf(os.Stderr, "\t* provider type\n")
-	fmt.Fprintf(os.Stderr, "\t* storage path (within the provider)\n")
-	fmt.Fprintf(os.Stderr, "The key takes the form of <type>:<path>, that is separated by colon (:)\n")
+	fmt.Fprintf(os.Stderr, "\t* storage key path (within the provider)\n")
+	fmt.Fprintf(os.Stderr, "The key takes the form of <type>%s<path>, that is separated by colon (%s)\n", salainen.ProviderSeparator, salainen.ProviderSeparator)
 
 	fmt.Fprintf(os.Stderr, "If you only supply the <secret key> then this is a get secret action\n")
 	fmt.Fprintf(os.Stderr, "If you supply the <secret key> and <secret value> then this is a set action of a secret\n\n")

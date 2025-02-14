@@ -18,11 +18,12 @@ const providerName = "file"
 func (sl *f) Init(custom interface{}) error {
 
 	if custom != nil {
-		settings := custom.(map[string]interface{})
+		if settings, ok := custom.(map[string]string); ok {
 
-		value, exists := settings["RootPath"]
-		if exists && value.(string) != "" {
-			sl.RootPath = value.(string)
+			value, exists := settings["RootPath"]
+			if exists && value != "" {
+				sl.RootPath = value
+			}
 		}
 	}
 

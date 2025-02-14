@@ -25,7 +25,7 @@ func testInit() {
 func TestSimpleKPCreate(t *testing.T) {
 
 	testInit()
-	custom := map[string]any{
+	custom := map[string]string{
 		"Path":           fmt.Sprintf("../../tests/data/test_secrets.kdbx"),
 		"MasterPassword": "plain:tester01",
 	}
@@ -46,7 +46,7 @@ func TestSimpleKPCreate(t *testing.T) {
 func TestSimpleKPPutGet(t *testing.T) {
 
 	testInit()
-	custom := map[string]any{
+	custom := map[string]string{
 		"Path":           fmt.Sprintf("../../tests/data/test_secrets.kdbx"),
 		"MasterPassword": "plain:tester01",
 	}
@@ -89,7 +89,7 @@ func TestSimpleKPPutGet(t *testing.T) {
 func TestGroupKPPutGet(t *testing.T) {
 
 	testInit()
-	custom := map[string]any{
+	custom := map[string]string{
 		"Path":           fmt.Sprintf("../../tests/data/test_secrets.kdbx"),
 		"MasterPassword": "plain:tester01",
 		"DefaultGroup":   "my_other_group",
@@ -146,7 +146,7 @@ func TestGroupKPPutGet(t *testing.T) {
 func TestGroupNextKPPutGet(t *testing.T) {
 
 	testInit()
-	custom := map[string]any{
+	custom := map[string]string{
 		"Path":           fmt.Sprintf("../../tests/data/test_secrets.kdbx"),
 		"MasterPassword": "plain:tester01",
 		"DefaultGroup":   "my_other_group",
@@ -203,7 +203,7 @@ func TestGroupNextKPPutGet(t *testing.T) {
 func TestGroupEmptyKPPutGet(t *testing.T) {
 
 	testInit()
-	custom := map[string]any{
+	custom := map[string]string{
 		"Path":           fmt.Sprintf("../../tests/data/test_secrets.kdbx"),
 		"MasterPassword": "plain:tester01",
 		"DefaultGroup":   "my_other_group",
@@ -262,7 +262,7 @@ func TestNewFileGet(t *testing.T) {
 	testInit()
 	keepassFile := fmt.Sprintf("../../tests/data/test_secrets_new.kdbx")
 
-	custom := map[string]any{
+	custom := map[string]string{
 		"Path":           keepassFile,
 		"MasterPassword": "plain:tester02",
 		"DefaultGroup":   "my_new_group",

@@ -60,22 +60,23 @@ func (sl *f) Init(custom interface{}) error {
 	sl.ProductName = "Bitwarden"
 
 	if custom != nil {
-		settings := custom.(map[string]interface{})
+		if settings, ok := custom.(map[string]string); ok {
 
-		value, exists := settings["ApiUrl"]
-		if exists && value.(string) != "" {
-			sl.ApiUrl = value.(string)
-		}
+			value, exists := settings["ApiUrl"]
+			if exists && value != "" {
+				sl.ApiUrl = value
+			}
 
-		value, exists = settings["IdentityURL"]
-		if exists && value.(string) != "" {
-			sl.IdentityURL = value.(string)
-		}
+			value, exists = settings["IdentityURL"]
+			if exists && value != "" {
+				sl.IdentityURL = value
+			}
 
-		value, exists = settings["AccessToken"]
-		if exists && value.(string) != "" {
-			// NOTE that the value will be unpacked at usage not now
-			sl.AccessToken = value.(string)
+			value, exists = settings["AccessToken"]
+			if exists && value != "" {
+				// NOTE that the value will be unpacked at usage not now
+				sl.AccessToken = value
+			}
 		}
 	}
 	return nil

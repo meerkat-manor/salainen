@@ -16,12 +16,13 @@ var providerName = "wincred"
 func (sl *f) Init(custom interface{}) error {
 
 	if custom != nil {
-		settings := custom.(map[string]interface{})
-		value, exists := settings["Prefix"]
-		if exists && value.(string) != "" {
-			sl.Prefix = value.(string)
-			if sl.Prefix == "{{.ProductName}}" {
-				sl.Prefix = salainen.ProductName
+		if settings, ok := custom.(map[string]string); ok {
+			value, exists := settings["Prefix"]
+			if exists && value != "" {
+				sl.Prefix = value
+				if sl.Prefix == "{{.ProductName}}" {
+					sl.Prefix = salainen.ProductName
+				}
 			}
 		}
 	}

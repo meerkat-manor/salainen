@@ -7,7 +7,7 @@ import (
 
 func TestSimpleEncFileCreate(t *testing.T) {
 
-	custom := map[string]any{
+	custom := map[string]string{
 		"RootPath":  fmt.Sprintf("~/.secrets/test_%s", "salainen"),
 		"Algorithm": "",
 	}
@@ -27,7 +27,7 @@ func TestSimpleEncFileCreate(t *testing.T) {
 
 func TestSimpleEncFilePutGet(t *testing.T) {
 
-	custom := map[string]any{
+	custom := map[string]string{
 		"RootPath":  fmt.Sprintf("~/.secrets/test_%s", "salainen"),
 		"Algorithm": "",
 	}
@@ -68,7 +68,7 @@ func TestSimpleEncFilePutGet(t *testing.T) {
 
 func TestPassEncFilePutGet(t *testing.T) {
 
-	custom := map[string]any{
+	custom := map[string]string{
 		"RootPath":  fmt.Sprintf("~/.secrets/test_%s", "salainen"),
 		"Algorithm": "",
 	}
@@ -127,7 +127,7 @@ func TestPassEncFilePutGet(t *testing.T) {
 
 func TestUnknownEncFileCreate(t *testing.T) {
 
-	custom := map[string]any{
+	custom := map[string]string{
 		"RootPath":  fmt.Sprintf("~/.secrets/test_%s", "salainen"),
 		"Algorithm": "xyz",
 	}

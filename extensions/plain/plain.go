@@ -17,7 +17,7 @@ func (sl *f) Init(custom interface{}) error {
 
 func (sl *f) Put(path, val string) error {
 
-	return fmt.Errorf("plain passwords (clear text) cannot be set")
+	return fmt.Errorf("%s passwords (clear text) cannot be set", providerName)
 }
 
 func (sl *f) Get(path string) (string, error) {

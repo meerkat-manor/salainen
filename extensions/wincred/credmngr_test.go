@@ -7,7 +7,7 @@ import (
 
 func TestSimpleWinCredCreate(t *testing.T) {
 
-	custom := map[string]any{
+	custom := map[string]string{
 		"Prefix": fmt.Sprintf("test_%s", "salainen"),
 	}
 
@@ -26,7 +26,7 @@ func TestSimpleWinCredCreate(t *testing.T) {
 
 func TestSimpleWinCredPutGet(t *testing.T) {
 
-	custom := map[string]any{
+	custom := map[string]string{
 		"Prefix": fmt.Sprintf("test_%s/", "salainen"),
 	}
 

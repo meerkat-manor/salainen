@@ -7,7 +7,7 @@ import (
 
 func TestSimpleEnvCreate(t *testing.T) {
 
-	custom := map[string]any{
+	custom := map[string]string{
 		"Prefix": fmt.Sprintf("test_%s_", "salainen"),
 	}
 
@@ -26,7 +26,7 @@ func TestSimpleEnvCreate(t *testing.T) {
 
 func TestSimpleEnvPutGet(t *testing.T) {
 
-	custom := map[string]any{
+	custom := map[string]string{
 		"Prefix": fmt.Sprintf("test_%s", "salainen"),
 	}
 

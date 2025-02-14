@@ -11,6 +11,8 @@ import (
 	w "github.com/tobischo/gokeepasslib/v3/wrappers"
 )
 
+var debugState = false
+
 type f struct {
 	ProviderName   string
 	Path           string
@@ -24,25 +26,34 @@ const providerName = "keepass"
 
 func (sl *f) Init(custom interface{}) error {
 
+	// Check for debug
+	debugEnv := strings.ToUpper(os.Getenv(strings.ToUpper(salainen.ProductName) + "_DEBUG"))
+	debugState = debugEnv == "TRUE" || debugEnv == "YES" || debugEnv == "1"
+
 	sl.ProviderName = "Keepass" // Note the leading capital
 	sl.PrimaryGroup = salainen.ProductName + "_managed"
 
 	if custom != nil {
-		settings := custom.(map[string]interface{})
-		value, exists := settings["Path"]
-		if exists && value.(string) != "" {
-			sl.Path = value.(string)
-			if sl.Path == "{{.ProductName}}" {
-				sl.Path = salainen.ProductName
+		if settings, ok := custom.(map[string]string); ok {
+			value, exists := settings["Path"]
+			if exists && value != "" {
+				sl.Path = value
+				if sl.Path == "{{.ProductName}}" {
+					sl.Path = salainen.ProductName
+				}
 			}
-		}
-		value, exists = settings["MasterPassword"]
-		if exists && value.(string) != "" {
-			sl.MasterPassword = value.(string)
-		}
-		value, exists = settings["DefaultGroup"]
-		if exists && value.(string) != "" {
-			sl.DefaultGroup = value.(string)
+			value, exists = settings["MasterPassword"]
+			if exists && value != "" {
+				sl.MasterPassword = value
+			}
+			value, exists = settings["DefaultGroup"]
+			if exists && value != "" {
+				sl.DefaultGroup = value
+			}
+		} else {
+			if debugState {
+				fmt.Printf("DEBUG>> no custom configuration loaded\n")
+			}
 		}
 	}
 
@@ -51,11 +62,11 @@ func (sl *f) Init(custom interface{}) error {
 	}
 
 	if sl.Path == "" {
-		return fmt.Errorf("keepass file location not specified in configuration under 'Path'")
+		return fmt.Errorf("%s file location not specified in configuration under 'Path'", providerName)
 	}
 
 	if sl.MasterPassword == "" {
-		return fmt.Errorf("keepass master password not specified in configuration under 'MasterPassword'")
+		return fmt.Errorf("%s master password not specified in configuration under 'MasterPassword'", providerName)
 	}
 
 	fpath := sl.Path
