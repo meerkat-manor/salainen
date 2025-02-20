@@ -24,7 +24,7 @@ func (sl *f) Init(custom interface{}) error {
 
 func (sl *f) Put(path, val string) error {
 
-	return fmt.Errorf("%s passwords cannot be set", providerName)
+	return fmt.Errorf("%s credentials cannot be set", providerName)
 }
 
 func (sl *f) Get(path string) (string, error) {

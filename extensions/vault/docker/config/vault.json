@@ -1,0 +1,8 @@
+{
+  "storage": {
+    "file": {
+      "path": "/vault/file"
+    }
+  },
+  "ui": true
+}

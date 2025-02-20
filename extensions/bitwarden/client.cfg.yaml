@@ -2,4 +2,4 @@ package: gen
 generate:
   client: true
   embedded-spec: true
-output: ./gen/general-client.gen.go
+output: ./genbw/general-client.gen.go

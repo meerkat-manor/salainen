@@ -1,1 +1,4 @@
 tests/data/test_secrets_new.kdbx
+extensions/file/testcasePutGet.txt
+extensions/vault/docker/data/*
+extensions/vault/docker/logs/*

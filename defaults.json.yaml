@@ -1,0 +1,71 @@
+name: salainen
+version: 0.0.4
+providers:
+  bitwarden:
+    enabled: false
+    provider_type: ""
+    name: Bitwarden
+    config: ""
+    custom:
+      AccessToken: keyring:test_BW
+      ApiUrl: http://localhost:8087
+      IdentityURL: ""
+  efile:
+    enabled: true
+    provider_type: ""
+    name: Encrypted File System
+    config: ""
+    custom:
+      Algorithm: ""
+      RootPath: ~/.secrets/salainen
+  env:
+    enabled: true
+    provider_type: ""
+    name: Environmental Variable
+    config: ""
+    custom:
+      Prefix: '{{.ProductName}}'
+  file:
+    enabled: true
+    provider_type: ""
+    name: File System
+    config: ""
+    custom:
+      RootPath: ~/.secrets/salainen
+  keepass:
+    enabled: false
+    provider_type: ""
+    name: Keepass
+    config: ""
+    custom:
+      DefaultGroup: ""
+      MasterPassword: keyring:test_kp
+      Path: ""
+      PrimaryGroup: ""
+  keyring:
+    enabled: true
+    provider_type: ""
+    name: Keyring
+    config: ""
+    custom:
+      Service: '{{.ProductName}}'
+  plain:
+    enabled: true
+    provider_type: ""
+    name: Plain text
+    config: ""
+    custom: {}
+  prompt:
+    enabled: true
+    provider_type: ""
+    name: Prompt
+    config: ""
+    custom:
+      Prefix: '{{.ProductName}}'
+  wincred:
+    enabled: false
+    provider_type: ""
+    name: Windows Credential Manager
+    config: ""
+    custom:
+      Prefix: '{{.ProductName}}'

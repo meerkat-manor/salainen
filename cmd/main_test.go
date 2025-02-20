@@ -25,7 +25,7 @@ func TestSimpleInit(t *testing.T) {
 		arg01 := []string{
 			"keyring:test_missing_xyz",
 		}
-		err = process_default(false, arg01)
+		err = process_default(false, false, true, arg01)
 		if err == nil {
 			t.Errorf("error expected: %v", arg01)
 		}
@@ -34,14 +34,14 @@ func TestSimpleInit(t *testing.T) {
 			"keyring:test_xyz",
 			"miscrete",
 		}
-		err = process_default(false, arg02)
+		err = process_default(false, false, true, arg02)
 		if err != nil {
 			t.Errorf("error with default process: %v\n %v", arg02, err)
 		}
 		arg02 = []string{
 			"keyring:test_xyz",
 		}
-		err = process_default(false, arg02)
+		err = process_default(false, false, true, arg02)
 		if err != nil {
 			t.Errorf("error with default process: %v", err)
 		}

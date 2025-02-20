@@ -9,38 +9,78 @@ import (
 	"github.com/meerkat-manor/salainen"
 )
 
+const (
+	DefaultVault   = "secret"
+	DefaultElement = "password"
+)
+
+var providerName = "vault"
+
 type f struct {
-	client  *vault.Client
-	address string
-	token   string
+	client      *vault.Client
+	address     string
+	token       string
+	vault       string
+	elementName string
 }
 
-type CustomConfig struct {
-	Address string
-	Token   string
-}
-
-func (v *f) Init(custom interface{}) error {
+func (sl *f) Init(custom interface{}) error {
 
 	if custom != nil {
-		settings := custom.(map[string]interface{})
+		settings := custom.(map[string]string)
 
-		value, exists := settings["address"]
-		if exists && value.(string) != "" {
-			v.address = value.(string)
+		value, exists := settings["ApiUrl"]
+		if exists && value != "" {
+			sl.address = value
 		}
 
-		value, exists = settings["token"]
-		if exists && value.(string) != "" {
-			v.token = value.(string)
+		value, exists = settings["AccessToken"]
+		if exists && value != "" {
+			sl.token = value
 		}
+
+		value, exists = settings["Vault"]
+		if exists && value != "" {
+			sl.vault = value
+		}
+		value, exists = settings["ElementName"]
+		if exists && value != "" {
+			sl.elementName = value
+		}
+
 	}
 
+	if sl.address == "" {
+		return fmt.Errorf("configuration value for 'ApiUrl' missing")
+	}
+
+	if sl.token == "" {
+		return fmt.Errorf("configuration value for 'AccessToken' missing")
+	}
+
+	if sl.vault == "" {
+		sl.vault = DefaultVault
+	}
+
+	if sl.elementName == "" {
+		sl.elementName = DefaultElement
+	}
+
+	if strings.HasPrefix(sl.token, (providerName + ":")) {
+		return fmt.Errorf("error fetching %s access password with looping detected", providerName)
+	}
+
+	password, errS := salainen.Get(sl.token)
+	if errS != nil || password == "" {
+		return fmt.Errorf("error fetching %s access password.  More information: %v", providerName, errS)
+	}
+
+	sl.token = password
 	config := vault.DefaultConfig()
-	config.Address = v.address
+	config.Address = sl.address
 
 	var err error
-	v.client, err = vault.NewClient(config)
+	sl.client, err = vault.NewClient(config)
 	if err != nil {
 		return fmt.Errorf("unable to initialize Vault client: %v", err)
 	}
@@ -48,20 +88,19 @@ func (v *f) Init(custom interface{}) error {
 	return nil
 }
 
-func (v *f) Put(path, val string) error {
+func (sl *f) Put(path, val string) error {
 	parts := strings.SplitN(path, "|", 2)
 	fpath := parts[0]
 
-	v.client.SetToken(v.token)
+	sl.client.SetToken(sl.token)
 
-	// TODO
 	secretData := map[string]interface{}{
-		"password": val,
+		sl.elementName: val,
 	}
 
 	ctx := context.Background()
 
-	_, err := v.client.KVv2(fpath).Put(ctx, "my-secret-password", secretData)
+	_, err := sl.client.KVv2(sl.vault).Put(ctx, fpath, secretData)
 	if err != nil {
 		return fmt.Errorf("unable to write secret: %v", err)
 	}
@@ -69,27 +108,35 @@ func (v *f) Put(path, val string) error {
 	return nil
 }
 
-func (v *f) Get(path string) (string, error) {
+func (sl *f) Get(path string) (string, error) {
 	parts := strings.SplitN(path, "|", 2)
 	fpath := parts[0]
 
 	ctx := context.Background()
 
-	secret, err := v.client.KVv2(fpath).Get(ctx, "my-secret-password")
+	secret, err := sl.client.KVv2(sl.vault).Get(ctx, fpath)
 	if err != nil {
 		return "", fmt.Errorf("unable to read secret: %v", err)
 	}
 
-	value, ok := secret.Data["password"].(string)
+	value, ok := secret.Data[sl.elementName].(string)
 	if !ok {
-		return "", fmt.Errorf("value type assertion failed: %T %#v", secret.Data["password"], secret.Data["password"])
+		return "", fmt.Errorf("value type assertion failed: %v", secret.Data[sl.elementName])
 	}
 
 	return value, nil
 }
 
 func (sl *f) Help() {
-	fmt.Printf("Vault help\n")
+	fmt.Printf("Vault help\n\n")
+	fmt.Printf("HashiCorp can be used as a secret provider by using the prefix\n")
+	fmt.Printf("'vault:' followed by the key to the secret path in the Vault\n")
+	fmt.Printf("\n")
+	fmt.Printf("The Vault API URL scheme, host and port needs to be configured\n")
+	fmt.Printf("An access token is also mandatory and this could be sourced \n")
+	fmt.Printf("from another provider in salainen, such as 'keyring'\n")
+	fmt.Printf("\n")
+	fmt.Printf("For more information please see %s/extensions/vault/ \n", salainen.SourceForgeURL)
 }
 
 func New(config string, custom interface{}) (salainen.SecretStorage, error) {
@@ -109,7 +156,7 @@ func Register(config string, custom interface{}) error {
 	if err != nil {
 		return err
 	}
-	salainen.AddSecretStorage("vault", storage)
+	salainen.AddSecretStorage(providerName, storage)
 
 	return nil
 }

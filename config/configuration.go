@@ -23,10 +23,18 @@ import (
 
 var debugState = false
 
+type ProviderType string
+
+const (
+	Level1ProviderType ProviderType = "Level1"
+	Level2ProviderType ProviderType = "Level2"
+)
+
 type StorageConfiguration struct {
-	Enabled bool   `yaml:"enabled" json:"enabled"`
-	Name    string `yaml:"name" json:"name"`
-	Config  string `yaml:"config" json:"config"`
+	Enabled      bool         `yaml:"enabled" json:"enabled"`
+	ProviderType ProviderType `yaml:"provider_type" json:"provider_type"`
+	Name         string       `yaml:"name" json:"name"`
+	Config       string       `yaml:"config" json:"config"`
 
 	//	Custom interface{} `yaml:"custom" json:"custom"`
 	Custom map[string]string `yaml:"custom" json:"custom"`
@@ -37,19 +45,6 @@ type ApplicationConfiguration struct {
 	Version string `yaml:"version" json:"version"`
 
 	Storage map[string]StorageConfiguration `yaml:"providers" json:"providers"`
-}
-
-type YStorageConfiguration struct {
-	Enabled bool   `yaml:"enabled" json:"enabled"`
-	Name    string `yaml:"name" json:"name"`
-	Config  string `yaml:"config" json:"config"`
-}
-
-type YApplicationConfiguration struct {
-	Name    string `yaml:"name" json:"name"`
-	Version string `yaml:"version" json:"version"`
-
-	//	Storage map[string]YStorageConfiguration `yaml:"providers" json:"providers"`
 }
 
 type ApplicationRun struct {
@@ -170,80 +165,94 @@ func New(configFile string, ignoreProviderErrors bool) (*ApplicationRun, error) 
 		app.Name = conf.Name
 		app.Version = conf.Version
 
-		for key, item := range conf.Storage {
-			if item.Enabled {
+		pTypes := []ProviderType{
+			Level1ProviderType,
+			Level2ProviderType,
+		}
 
-				switch key {
+		// Iterate over configuration in right sequence
+		for _, itemPType := range pTypes {
+			for key, item := range conf.Storage {
 
-				case "plain":
-					app.StorageName[key] = item.Name
-					err := plain.Register(configFile, item.Custom)
-					if err != nil && !ignoreProviderErrors {
-						return nil, err
+				// Default provider type
+				if item.ProviderType == "" {
+					item.ProviderType = Level1ProviderType
+				}
+
+				if item.Enabled && item.ProviderType == itemPType {
+
+					switch key {
+
+					case "plain":
+						app.StorageName[key] = item.Name
+						err := plain.Register(configFile, item.Custom)
+						if err != nil && !ignoreProviderErrors {
+							return nil, err
+						}
+
+					case "env":
+						app.StorageName[key] = item.Name
+						err := env.Register(configFile, item.Custom)
+						if err != nil && !ignoreProviderErrors {
+							return nil, err
+						}
+
+					case "wincred":
+						app.StorageName[key] = item.Name
+						err := wincred.Register(configFile, item.Custom)
+						if err != nil && !ignoreProviderErrors {
+							return nil, err
+						}
+
+					case "keyring":
+						app.StorageName[key] = item.Name
+						err := keyring.Register(configFile, item.Custom)
+						if err != nil && !ignoreProviderErrors {
+							return nil, err
+						}
+
+					case "file":
+						app.StorageName[key] = item.Name
+						err := file.Register(configFile, item.Custom)
+						if err != nil && !ignoreProviderErrors {
+							return nil, err
+						}
+
+					case "efile":
+						app.StorageName[key] = item.Name
+						err := encryptedfile.Register(configFile, item.Custom)
+						if err != nil && !ignoreProviderErrors {
+							return nil, err
+						}
+
+					case "prompt":
+						app.StorageName[key] = item.Name
+						err := promptsec.Register(configFile, item.Custom)
+						if err != nil && !ignoreProviderErrors {
+							return nil, err
+						}
+
+					case "bitwarden":
+						app.StorageName[key] = item.Name
+						err := bitwarden.Register(configFile, item.Custom)
+						if err != nil && !ignoreProviderErrors {
+							return nil, err
+						}
+
+					case "keepass":
+						app.StorageName[key] = item.Name
+						err := keepass.Register(configFile, item.Custom)
+						if err != nil && !ignoreProviderErrors {
+							return nil, err
+						}
+
+					default:
+						return nil, fmt.Errorf("provider '%s' not recognized", key)
 					}
-
-				case "env":
-					app.StorageName[key] = item.Name
-					err := env.Register(configFile, item.Custom)
-					if err != nil && !ignoreProviderErrors {
-						return nil, err
-					}
-
-				case "wincred":
-					app.StorageName[key] = item.Name
-					err := wincred.Register(configFile, item.Custom)
-					if err != nil && !ignoreProviderErrors {
-						return nil, err
-					}
-
-				case "keyring":
-					app.StorageName[key] = item.Name
-					err := keyring.Register(configFile, item.Custom)
-					if err != nil && !ignoreProviderErrors {
-						return nil, err
-					}
-
-				case "file":
-					app.StorageName[key] = item.Name
-					err := file.Register(configFile, item.Custom)
-					if err != nil && !ignoreProviderErrors {
-						return nil, err
-					}
-
-				case "efile":
-					app.StorageName[key] = item.Name
-					err := encryptedfile.Register(configFile, item.Custom)
-					if err != nil && !ignoreProviderErrors {
-						return nil, err
-					}
-
-				case "prompt":
-					app.StorageName[key] = item.Name
-					err := promptsec.Register(configFile, item.Custom)
-					if err != nil && !ignoreProviderErrors {
-						return nil, err
-					}
-
-				case "bitwarden":
-					app.StorageName[key] = item.Name
-					err := bitwarden.Register(configFile, item.Custom)
-					if err != nil && !ignoreProviderErrors {
-						return nil, err
-					}
-
-				case "keepass":
-					app.StorageName[key] = item.Name
-					err := keepass.Register(configFile, item.Custom)
-					if err != nil && !ignoreProviderErrors {
-						return nil, err
-					}
-
-				default:
-					return nil, fmt.Errorf("provider '%s' not recognized", key)
 				}
 			}
-
 		}
+
 	} else {
 		// Load defaults
 

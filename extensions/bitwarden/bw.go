@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/meerkat-manor/salainen"
-	"github.com/meerkat-manor/salainen/extensions/bitwarden/gen"
+	"github.com/meerkat-manor/salainen/extensions/bitwarden/genbw"
 	"github.com/oapi-codegen/runtime/types"
 )
 
@@ -38,8 +38,8 @@ type FolderList struct {
 type ItemList struct {
 	Success bool `json:"success,omitempty"`
 	Data    struct {
-		Object string             `json:"object,omitempty"`
-		Data   []gen.ItemTemplate `json:"data,omitempty"`
+		Object string               `json:"object,omitempty"`
+		Data   []genbw.ItemTemplate `json:"data,omitempty"`
 	} `json:"data,omitempty"`
 	RevisionDate string `json:"revisionDate,omitempty"`
 	DeleteDate   string `json:"deleteDate,omitempty"`
@@ -114,7 +114,7 @@ func (sl *f) Get(path string) (string, error) {
 
 	unlocked := false
 
-	client, errC := gen.NewClientWithResponses(server, gen.WithHTTPClient(httpClient))
+	client, errC := genbw.NewClientWithResponses(server, genbw.WithHTTPClient(httpClient))
 	if errC != nil {
 		return "", fmt.Errorf("error making %s client. Error: %v", sl.ProductName, errC)
 	}
@@ -132,19 +132,19 @@ func (sl *f) Get(path string) (string, error) {
 		} else {
 			data := builder.String()
 
-			var status gen.Status
+			var status genbw.Status
 			err = json.Unmarshal([]byte(data), &status)
 			if err != nil {
 				fmt.Printf("error during Unmarshal(): %s", err)
 			}
-			if *status.Data.Template.Status == gen.Unlocked {
+			if *status.Data.Template.Status == genbw.Unlocked {
 				unlocked = true
 			}
 		}
 	}
 
 	if !unlocked {
-		unlock := gen.PostUnlockJSONRequestBody{
+		unlock := genbw.PostUnlockJSONRequestBody{
 			Password: &password,
 		}
 
@@ -230,9 +230,9 @@ func (sl *f) Help() {
 	fmt.Printf("For more information please see %s/extensions/bitwarden/ \n", salainen.SourceForgeURL)
 }
 
-func (sl *f) getFolders(client *gen.ClientWithResponses, folder string) (*types.UUID, error) {
+func (sl *f) getFolders(client *genbw.ClientWithResponses, folder string) (*types.UUID, error) {
 
-	parms := gen.GetListObjectFoldersParams{
+	parms := genbw.GetListObjectFoldersParams{
 		Search: &folder,
 	}
 
@@ -274,11 +274,11 @@ func (sl *f) getFolders(client *gen.ClientWithResponses, folder string) (*types.
 	return nil, fmt.Errorf("error when listing folders")
 }
 
-func (sl *f) getItemByFolder(client *gen.ClientWithResponses, folderId *types.UUID, itemName *string) (string, error) {
+func (sl *f) getItemByFolder(client *genbw.ClientWithResponses, folderId *types.UUID, itemName *string) (string, error) {
 
 	// fmt.Printf("DEBUG item by folder/name: %v %s\n", folderId, *itemName)
 
-	parms := gen.GetListObjectItemsParams{
+	parms := genbw.GetListObjectItemsParams{
 		Folderid: folderId,
 	}
 
@@ -320,7 +320,7 @@ func (sl *f) getItemByFolder(client *gen.ClientWithResponses, folderId *types.UU
 	return "", fmt.Errorf("not matching record located")
 }
 
-func (sl *f) getItemByUUID(client *gen.ClientWithResponses, id uuid.UUID) (string, error) {
+func (sl *f) getItemByUUID(client *genbw.ClientWithResponses, id uuid.UUID) (string, error) {
 
 	resp, err := client.GetObjectPasswordId(context.Background(), id)
 	if err != nil {

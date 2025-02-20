@@ -1,0 +1,19 @@
+meta {
+  name: API document help
+  type: http
+  seq: 7
+}
+
+get {
+  url: http://127.0.0.1:8200/v1/secret?help=1
+  body: none
+  auth: none
+}
+
+params:query {
+  help: 1
+}
+
+headers {
+  X-Vault-Token: salainen-root
+}

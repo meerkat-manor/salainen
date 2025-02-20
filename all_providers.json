@@ -54,6 +54,7 @@
         "keepass": {
             "enabled": true,
             "name": "Keepass",
+            "provider_type": "Level2",
             "custom": {
                 "Path": "tests/data/test_secrets.kdbx",
                 "MasterPassword" : "plain:tester01",
@@ -64,10 +65,22 @@
         "bitwarden": {
             "enabled": true,
             "name": "Bitwarden",
+            "provider_type": "Level2",
             "custom": {
                 "ApiUrl": "http://localhost:8087",
                 "IdentityURL": "",
                 "AccessToken" : "keyring:test_BW"
+            }
+        },
+        "vault": {
+            "enabled": true,
+            "name": "HashiCorp Vault",
+            "provider_type": "Level2",
+            "custom": {
+                "ApiUrl": "http://127.0.0.1:8200",
+                "AccessToken" : "plain:salainen-root",
+                "Vault": "secret",
+                "ElementName": "password"
             }
         }
     }

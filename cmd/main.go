@@ -9,6 +9,7 @@ import (
 
 	"github.com/meerkat-manor/salainen"
 	"github.com/meerkat-manor/salainen/config"
+	"github.com/meerkat-manor/salainen/generate"
 	"golang.design/x/clipboard"
 )
 
@@ -16,6 +17,8 @@ func main() {
 
 	configFile := flag.String("config", "", "path to config file")
 	clip := flag.Bool("clip", false, "copy to clipboard the value fetched")
+	overwrite := flag.Bool("overwrite", false, "overwrite existing value")
+	genSecret := flag.Bool("generate", false, "generate a credential value and store it")
 	help := flag.Bool("help", false, "help information")
 	version := flag.Bool("version", false, fmt.Sprintf("%s version", salainen.ProductName))
 
@@ -89,7 +92,7 @@ func main() {
 		}
 	}
 
-	err = process_default(*clip, flag.Args())
+	err = process_default(*clip, *genSecret, *overwrite, flag.Args())
 	if err != nil {
 		if !strings.HasPrefix(err.Error(), "wrong parameters") {
 			fmt.Fprintf(os.Stderr, "An error occurred: %s\n", err)
@@ -101,7 +104,22 @@ func main() {
 
 }
 
-func process_default(clip bool, args []string) error {
+func process_default(clip bool, genSecret bool, overwrite bool, args []string) error {
+
+	if genSecret && len(args) > 1 {
+		return fmt.Errorf("you cannot supply a value to save when using generate option")
+	}
+
+	var err error
+	var genCredential string
+
+	if genSecret {
+		genCredential, err = generate.AuthenticationSecret(nil)
+		if err != nil {
+			return err
+		}
+		args = append(args, genCredential)
+	}
 
 	switch len(args) {
 	case 1:
@@ -111,7 +129,7 @@ func process_default(clip bool, args []string) error {
 		}
 
 		if clip {
-			err := clipboard.Init()
+			err = clipboard.Init()
 			if err != nil {
 				return err
 			} else {
@@ -124,10 +142,34 @@ func process_default(clip bool, args []string) error {
 		return nil
 
 	case 2:
-		err := salainen.Put(args[0], args[1])
+
+		if !overwrite {
+			// Check value does not exist
+			_, err = salainen.Get(args[0])
+			if err == nil {
+				return fmt.Errorf("secret already exists and overwrite not specified. Save not completed.")
+			}
+		}
+
+		err = salainen.Put(args[0], args[1])
 		if err != nil {
 			return err
 		}
+
+		if genSecret {
+			if clip {
+				err := clipboard.Init()
+				if err != nil {
+					return err
+				} else {
+					clipboard.Write(clipboard.FmtText, []byte(genCredential))
+					fmt.Println("Generated secret copied too clipboard")
+				}
+			} else {
+				fmt.Print(genCredential)
+			}
+		}
+
 		return nil
 
 	default:

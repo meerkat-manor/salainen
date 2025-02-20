@@ -15,7 +15,10 @@ func testInit() {
 	if !internalInit {
 
 		configFile := "../../defaults.json"
-		plain.Register(configFile, nil)
+		err := plain.Register(configFile, nil)
+		if err != nil {
+			panic(err)
+		}
 		internalInit = true
 
 	}

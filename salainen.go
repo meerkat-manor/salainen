@@ -11,6 +11,10 @@ const (
 	ProductName       string = "salainen"
 	ProductVersion    string = "v0.0.6"
 	SourceForgeURL    string = "https://github.com/meerkat-manor/salainen/tree/main"
+
+	MaxProviderLength int = 30
+	MaxKeyPathLength  int = 250
+	MaxValueLength    int = 600
 )
 
 var (
@@ -51,6 +55,14 @@ func Put(key string, value string) error {
 		return fmt.Errorf("no key provided")
 	}
 
+	if len(value) < 1 {
+		return fmt.Errorf("no value provided")
+	}
+
+	if len(value) > MaxValueLength {
+		return fmt.Errorf("maximum value length exceeded (%d)", MaxValueLength)
+	}
+
 	storage, keypath, err := SearchSecretStorage(key)
 	if err != nil {
 		return err
@@ -81,6 +93,11 @@ func SearchSecretStorage(id string) (SecretStorage, string, error) {
 
 	if id == "" {
 		return nil, "", fmt.Errorf("no storage identifier provided")
+	}
+
+	maxLen := MaxKeyPathLength + MaxProviderLength + 1
+	if len(id) > maxLen {
+		return nil, "", fmt.Errorf("maximum key length exceeded (%d)", maxLen)
 	}
 
 	// Allow some sane default handling
