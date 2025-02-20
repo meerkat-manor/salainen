@@ -9,7 +9,7 @@ const (
 	ProviderSeparator string = ":"
 	SaneDefaults      bool   = true
 	ProductName       string = "salainen"
-	ProductVersion    string = "v0.0.6"
+	ProductVersion    string = "v0.0.7"
 	SourceForgeURL    string = "https://github.com/meerkat-manor/salainen/tree/main"
 
 	MaxProviderLength int = 30
