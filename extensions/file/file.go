@@ -73,8 +73,16 @@ func (sl *f) Get(path string) (string, error) {
 		fpath = filepath.Join(homeDir, fpath[2:])
 	}
 
+	parent := filepath.Dir(fpath)
+	if _, err := os.Stat(parent); err != nil {
+		return "", fmt.Errorf("directory '%s' does not exist", parent)
+	}
+
 	data, err := os.ReadFile(fpath)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return "", salainen.ErrNoSuchSecret
+		}
 		return "", err
 	}
 

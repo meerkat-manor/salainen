@@ -60,3 +60,13 @@ providers:
     config: ""
     custom:
       Prefix: '{{.ProductName}}'
+  ejson:
+    enabled: true
+    name: Encrypted JSON file
+    config: ""
+    custom:
+      RootPath: ~/.secrets/salainen/
+      KeyDir: ~/.secrets/salainen/
+      PublicKey: 
+      PrivateKey: 
+      ElementName: password

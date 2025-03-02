@@ -203,7 +203,7 @@ func process_storage(configFile *string, args []string) error {
 			}
 		}
 		if !match {
-			return fmt.Errorf("secret storage provider '%s' not recognized", name)
+			return fmt.Errorf("secret storage provider '%s' not recognized or matched", name)
 		}
 		return nil
 

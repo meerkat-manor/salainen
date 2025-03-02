@@ -73,6 +73,11 @@ func (sl *f) Put(path string, value string) error {
 		fpath = filepath.Join(homeDir, fpath[2:])
 	}
 
+	parent := filepath.Dir(fpath)
+	if _, err := os.Stat(parent); err != nil {
+		os.MkdirAll(parent, os.ModeDir)
+	}
+
 	// The default encryption key (password) used
 	// is the path, if not supplied
 	encKey := path
@@ -101,6 +106,11 @@ func (sl *f) Get(path string) (string, error) {
 			return "", err
 		}
 		fpath = filepath.Join(homeDir, fpath[2:])
+	}
+
+	parent := filepath.Dir(fpath)
+	if _, err := os.Stat(parent); err != nil {
+		return "", fmt.Errorf("directory '%s' does not exist", parent)
 	}
 
 	// The default encryption key (password) used

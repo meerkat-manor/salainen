@@ -1,4 +1,4 @@
-package file
+package ejsons
 
 import (
 	"os"
@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Shopify/ejson"
+	"github.com/meerkat-manor/salainen/extensions/plain"
 )
 
 /*
@@ -18,6 +19,23 @@ Test PUBLIC key:
 
 */
 
+var internalInit = false
+
+func testInit() {
+
+	if !internalInit {
+
+		configFile := "../../defaults.json"
+		err := plain.Register(configFile, nil)
+		if err != nil {
+			panic(err)
+		}
+		internalInit = true
+
+	}
+
+}
+
 func getTestDirectory() string {
 
 	return "../../tests/ejson"
@@ -25,11 +43,12 @@ func getTestDirectory() string {
 
 func TestSimpleEjsonCreate(t *testing.T) {
 
+	testInit()
 	custom := map[string]string{
 		"RootPath":    getTestDirectory(),
 		"KeyDir":      "",
 		"PublicKey":   "68bbde4475f044afdb8869977ab68d17d6354acdec89908bfeeb0c4738803a15",
-		"PrivateKey":  "8fb61adf1cce80d2e205db976a6f99731e9c413ed0887b35b026fc11be377440",
+		"PrivateKey":  "plain:8fb61adf1cce80d2e205db976a6f99731e9c413ed0887b35b026fc11be377440",
 		"ElementName": "password",
 	}
 
@@ -48,11 +67,12 @@ func TestSimpleEjsonCreate(t *testing.T) {
 
 func TestSimpleEjsonGet(t *testing.T) {
 
+	testInit()
 	custom := map[string]string{
 		"RootPath":    getTestDirectory(),
 		"KeyDir":      "",
 		"PublicKey":   "",
-		"PrivateKey":  "8fb61adf1cce80d2e205db976a6f99731e9c413ed0887b35b026fc11be377440",
+		"PrivateKey":  "plain:8fb61adf1cce80d2e205db976a6f99731e9c413ed0887b35b026fc11be377440",
 		"ElementName": "password",
 	}
 
@@ -81,11 +101,12 @@ func TestSimpleEjsonGet(t *testing.T) {
 
 func TestSimpleEjsonPutGet(t *testing.T) {
 
+	testInit()
 	custom := map[string]string{
 		"RootPath":    getTestDirectory(),
 		"KeyDir":      "",
 		"PublicKey":   "68bbde4475f044afdb8869977ab68d17d6354acdec89908bfeeb0c4738803a15",
-		"PrivateKey":  "8fb61adf1cce80d2e205db976a6f99731e9c413ed0887b35b026fc11be377440",
+		"PrivateKey":  "plain:8fb61adf1cce80d2e205db976a6f99731e9c413ed0887b35b026fc11be377440",
 		"ElementName": "password",
 	}
 

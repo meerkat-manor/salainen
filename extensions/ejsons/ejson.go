@@ -1,4 +1,4 @@
-package file
+package ejsons
 
 import (
 	"bytes"
@@ -10,6 +10,10 @@ import (
 
 	"github.com/Shopify/ejson"
 	"github.com/meerkat-manor/salainen"
+)
+
+const (
+	DefaultElement = "password"
 )
 
 type f struct {
@@ -51,10 +55,32 @@ func (sl *f) Init(custom interface{}) error {
 		}
 	}
 
+	if sl.ElementName == "" {
+		sl.ElementName = DefaultElement
+	}
+
+	if sl.PrivateKey != "" {
+		if strings.HasPrefix(sl.PrivateKey, (providerName + ":")) {
+			return fmt.Errorf("error fetching %s private key with looping detected", providerName)
+		}
+
+		privateKey, errS := salainen.Get(sl.PrivateKey)
+		if errS != nil || privateKey == "" {
+			return fmt.Errorf("error fetching %s private key.  More information: %v", providerName, errS)
+		}
+
+		sl.PrivateKey = privateKey
+	}
+
 	return nil
 }
 
 func (sl *f) Put(path string, val string) error {
+
+	if sl.PublicKey == "" {
+		return fmt.Errorf("no public encryption key provided")
+	}
+
 	parts := strings.SplitN(path, "|", 2)
 	fpath := parts[0]
 
@@ -124,7 +150,12 @@ func (sl *f) Put(path string, val string) error {
 	if stat, err := os.Stat(fpath); err == nil {
 		fileMode = stat.Mode()
 	} else {
-		fileMode = fileMode.Perm()
+		fileMode = os.ModePerm
+	}
+
+	parent := filepath.Dir(fpath)
+	if _, err := os.Stat(parent); err != nil {
+		os.MkdirAll(parent, os.ModeDir)
 	}
 
 	if err := os.WriteFile(fpath, outBuffer.Bytes(), fileMode); err != nil {
@@ -135,6 +166,11 @@ func (sl *f) Put(path string, val string) error {
 }
 
 func (sl *f) Get(path string) (string, error) {
+
+	if sl.KeyDir == "" && sl.PrivateKey == "" {
+		return "", fmt.Errorf("no decryption (KeyDir or PrivateKey) configuration values provided")
+	}
+
 	parts := strings.SplitN(path, "|", 2)
 	fpath := parts[0]
 
@@ -147,6 +183,18 @@ func (sl *f) Get(path string) (string, error) {
 			return "", err
 		}
 		fpath = filepath.Join(homeDir, fpath[2:])
+	}
+
+	parent := filepath.Dir(fpath)
+	if _, err := os.Stat(parent); err != nil {
+		return "", fmt.Errorf("directory '%s' does not exist", parent)
+	}
+
+	if _, err := os.Stat(fpath); err != nil {
+		if os.IsNotExist(err) {
+			return "", salainen.ErrNoSuchSecret
+		}
+		return "", err
 	}
 
 	// Decrypt file
@@ -176,10 +224,13 @@ func (sl *f) Help() {
 	fmt.Printf("A JSON file can be used as a secret provider by using\n")
 	fmt.Printf("the prefix 'ejson:' followed by the file name\n")
 	fmt.Printf("in the configured directory.  The contents in\n")
-	fmt.Printf("the ejson file are encoded secret.\n")
+	fmt.Printf("the ejson file are the encoded secret.\n")
 	fmt.Printf("\n")
+	fmt.Printf("The ejson file is a JSON format except that values (not names)\n")
+	fmt.Printf("are encrypted when stored in the file, and you need to \n")
+	fmt.Printf("decrypt before use.\n")
 	fmt.Printf("\n")
-	fmt.Printf("For more information please see %s/extensions/ejson/ \n", salainen.SourceForgeURL)
+	fmt.Printf("For more information please see %s/extensions/ejsons/ \n", salainen.SourceForgeURL)
 }
 
 func New(config string, custom interface{}) (salainen.SecretStorage, error) {

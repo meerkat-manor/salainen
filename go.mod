@@ -5,6 +5,7 @@ go 1.23.0
 toolchain go1.23.4
 
 require (
+	github.com/Shopify/ejson v1.5.4
 	github.com/danieljoos/wincred v1.2.2
 	github.com/getkin/kin-openapi v0.129.0
 	github.com/google/uuid v1.5.0
@@ -21,7 +22,6 @@ require (
 
 require (
 	al.essio.dev/pkg/shellescape v1.5.1 // indirect
-	github.com/Shopify/ejson v1.5.4 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect

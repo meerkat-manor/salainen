@@ -5,8 +5,7 @@
         "plain": {
             "enabled": true,
             "name": "Plain text",
-            "custom": {
-            }
+            "custom": {}
         },
         "env": {
             "enabled": true,
@@ -36,7 +35,6 @@
                 "RootPath": "~/.secrets/salainen",
                 "Algorithm": ""
             }
-
         },
         "keyring": {
             "enabled": true,
@@ -58,7 +56,7 @@
             "custom": {
                 "ApiUrl": "http://localhost:8087",
                 "IdentityURL": "",
-                "AccessToken" : "keyring:test_BW"
+                "AccessToken": "keyring:test_BW"
             }
         },
         "keepass": {
@@ -66,11 +64,21 @@
             "name": "Keepass",
             "custom": {
                 "Path": "",
-                "MasterPassword" : "keyring:test_kp",
+                "MasterPassword": "keyring:test_kp",
                 "DefaultGroup": "",
                 "PrimaryGroup": ""
+            }
+        },
+        "ejson": {
+            "enabled": true,
+            "name": "Encrypted JSON file",
+            "custom": {
+                "RootPath": "~/.secrets/salainen/",
+                "KeyDir": "~/.secrets/salainen/",
+                "PublicKey": "",
+                "PrivateKey": "",
+                "ElementName": "password"
             }
         }
     }
 }
-

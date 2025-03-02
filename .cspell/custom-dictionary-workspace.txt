@@ -1,5 +1,8 @@
 # Custom Dictionary Words
 Bitwarden
+ejson
+ejsons
+kdbx
 keepass
 Merebox
 salainen

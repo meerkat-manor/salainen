@@ -10,6 +10,7 @@ import (
 
 	"github.com/meerkat-manor/salainen"
 	"github.com/meerkat-manor/salainen/extensions/bitwarden"
+	"github.com/meerkat-manor/salainen/extensions/ejsons"
 	"github.com/meerkat-manor/salainen/extensions/encryptedfile"
 	"github.com/meerkat-manor/salainen/extensions/env"
 	"github.com/meerkat-manor/salainen/extensions/file"
@@ -17,6 +18,7 @@ import (
 	"github.com/meerkat-manor/salainen/extensions/keyring"
 	"github.com/meerkat-manor/salainen/extensions/plain"
 	"github.com/meerkat-manor/salainen/extensions/promptsec"
+	"github.com/meerkat-manor/salainen/extensions/vault"
 	"github.com/meerkat-manor/salainen/extensions/wincred"
 	"gopkg.in/yaml.v2"
 )
@@ -225,6 +227,13 @@ func New(configFile string, ignoreProviderErrors bool) (*ApplicationRun, error) 
 							return nil, err
 						}
 
+					case "ejson":
+						app.StorageName[key] = item.Name
+						err := ejsons.Register(configFile, item.Custom)
+						if err != nil && !ignoreProviderErrors {
+							return nil, err
+						}
+
 					case "prompt":
 						app.StorageName[key] = item.Name
 						err := promptsec.Register(configFile, item.Custom)
@@ -242,6 +251,13 @@ func New(configFile string, ignoreProviderErrors bool) (*ApplicationRun, error) 
 					case "keepass":
 						app.StorageName[key] = item.Name
 						err := keepass.Register(configFile, item.Custom)
+						if err != nil && !ignoreProviderErrors {
+							return nil, err
+						}
+
+					case "vault":
+						app.StorageName[key] = item.Name
+						err := vault.Register(configFile, item.Custom)
 						if err != nil && !ignoreProviderErrors {
 							return nil, err
 						}
