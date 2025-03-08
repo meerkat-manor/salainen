@@ -55,6 +55,8 @@ func (sl *f) Init(custom interface{}) error {
 		}
 	}
 
+	sl.RootPath = strings.ReplaceAll(sl.RootPath, "{{.ProductName}}", salainen.ProductName)
+
 	return nil
 }
 
