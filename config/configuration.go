@@ -89,6 +89,7 @@ func New(configFile string, ignoreProviderErrors bool) (*ApplicationRun, error) 
 		// - path './conf' for product name (salainen) + .json or .yaml or .yml file
 		// - home directory ~/.salainen (product name) path for product name + .json or .yaml or .yml file
 		// - home directory ~/.secrets path for product name + .json or .yaml or .yml file
+		// - executable program directory for product name + .json or .yaml or .yml file
 		// - directory /etc for product name + .json or .yaml or .yml file
 
 		// If a matching file name is found then it is assumed to contain valid configuration
@@ -131,6 +132,12 @@ func New(configFile string, ignoreProviderErrors bool) (*ApplicationRun, error) 
 				tFile = checkConfigurationFile(filepath.Join(homeDir, ".secrets"))
 				match = tFile != ""
 			}
+		}
+
+		if !match {
+			pgmFldr := filepath.Dir(os.Args[0])
+			tFile = checkConfigurationFile(pgmFldr)
+			match = tFile != ""
 		}
 
 		if !match {
