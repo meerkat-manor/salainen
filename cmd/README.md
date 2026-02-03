@@ -11,7 +11,7 @@ a package.
 
 ## Objective
 
-The idea of the package was drive out of a need to use secrets for 
+The idea of the package was driven out of a need to use secrets for 
 various assets, such as a database, web service or email service.
 
 A common approach is to use environment variables, but the values should
@@ -28,7 +28,7 @@ The secrets also need to recognize that there are different environments
 such as local development, build pipelines, testing, staging and finally
 production.
 
-Your developers may also on different OSs such as Linux, Mac or Windows. 
+Your developers may also be on different OSs such as Linux, Mac or Windows. 
 
 Each of these scenarios can have different secret storage capabilities and
 user needs.

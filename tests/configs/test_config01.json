@@ -1,0 +1,34 @@
+{
+    "name": "salainen",
+    "version": "0.0.4",
+    "providers": {
+        "env": {
+            "enabled": true,
+            "name": "Environmental Variable",
+            "custom": {
+                "Prefix": "SAL_TEST01"
+            }
+        },
+        "file": {
+            "enabled": true,
+            "name": "File System",
+            "custom": {
+                "RootPath": "./tests/.secrets/SAL_TEST02"
+            }
+        },
+        "keyring": {
+            "enabled": true,
+            "name": "Keyring",
+            "custom": {
+                "Service": "SAL_TEST03"
+            }
+        },
+        "wincred": {
+            "enabled": true,
+            "name": "Windows Credential Manager",
+            "custom": {
+                "Prefix": "SAL_TEST04"
+            }
+        }
+    }
+}

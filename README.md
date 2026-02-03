@@ -1,6 +1,6 @@
 # Salainen
 
-**Salinen** is a simplistic Go secrets manager whose objective is to provide
+**Salainen** is a simplistic Go secrets manager whose objective is to provide
 a consistent interface to retrieving secrets from various providers.
 
 The providers supported are:

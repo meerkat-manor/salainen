@@ -1,6 +1,7 @@
-tests/data/test_secrets_new.kdbx
 extensions/file/testcasePutGet.txt
 extensions/vault/docker/data/*
 extensions/vault/docker/logs/*
+tests/data/test_secrets_new.kdbx
 tests/ejson/testcaseEjsonPutGet_03.json
 tests/ejson/TestEjsonGeneration_99.json
+tests/.secrets/*
