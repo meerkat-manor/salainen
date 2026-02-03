@@ -23,7 +23,7 @@ There is also a command line interface for **salainen**
 **salainen** is a simple function to set and get secrets.
 
 Configuration options exist for each location.  When encryption is
-used, the algorithm and associated details ae defined in the 
+used, the algorithm and associated details are defined in the 
 configuration.
 
 You can always stack your own encryption logic on the value
@@ -44,7 +44,6 @@ Configuration details are stored in a configuration file in either
 JSON or YAML format.  Please use only the extensions ``.json'`,
 ``.yaml`` or ``.yml` for your configuration files.
 
-
 The secret provider is defined as an entry on a``map[string]interface{}``
 and the map name is the provider identifier.
 
@@ -59,7 +58,6 @@ the parent for the custom block.
   This is only useful if listing available secret locations.
 * custom : A custom definition for each location.  Please refer to the location 
   documentation for more details.  For example [file](./extensions/file/)
-
 
 An example configuration file is:
 
@@ -120,10 +118,7 @@ An example configuration file is:
 }
 ```
 
-
-
 ### In Golang projects
-
 
 #### Set
 
