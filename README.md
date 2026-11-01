@@ -6,7 +6,8 @@ a consistent interface to retrieving secrets from various providers.
 The providers supported are:
 
 * Environment variables
-* Files and Encrypted files
+* Files and Encrypted files (ChaCha20-Poly1305 or GPG)
+* Encrypted JSON files (EJSON or GPG)
 * Keyring
 * Windows credential manager (Windows)
 * Keepass
@@ -23,7 +24,7 @@ There is also a command line interface for **salainen**
 **salainen** is a simple function to set and get secrets.
 
 Configuration options exist for each location.  When encryption is
-used, the algorithm and associated details are defined in the 
+used, the algorithm and associated details are defined in the
 configuration.
 
 You can always stack your own encryption logic on the value
@@ -48,7 +49,7 @@ The secret provider is defined as an entry on a``map[string]interface{}``
 and the map name is the provider identifier.
 
 The configuration settings are different for each location and are set in
-the custom block.  The following settings are applicable to all locations and are 
+the custom block.  The following settings are applicable to all locations and are
 the parent for the custom block.  
 
 * enabled : A boolean value to indicate whether the location is available.
@@ -56,7 +57,7 @@ the parent for the custom block.
   available.
 * name : The location English name.  If not supplied then the section name is used.
   This is only useful if listing available secret locations.
-* custom : A custom definition for each location.  Please refer to the location 
+* custom : A custom definition for each location.  Please refer to the location
   documentation for more details.  For example [file](./extensions/file/)
 
 An example configuration file is:
@@ -128,12 +129,12 @@ To set the secret value you call the function as
 salainen.Set("env:<key>", "<value>")
 ```
 
-This will use the default configuration and without 
-a ``salainen.json`` or ``salainen.yml`` being in the current file 
+This will use the default configuration and without
+a ``salainen.json`` or ``salainen.yml`` being in the current file
 search path or your home directory, it will enable **environmental**
 variables and files.
 
-The prefix value **env** indicates that this is an environmental 
+The prefix value **env** indicates that this is an environmental
 provider secret.
 
 If you call the register function with a configuration file location
@@ -145,7 +146,7 @@ salainen.Set("env:<key>", "<value>")
 ```
 
 Once the locations are registered
-you do not have to call the registration function within your 
+you do not have to call the registration function within your
 current program function.
 
 #### Get
@@ -156,12 +157,12 @@ To get the secret value you call the function as
 salainen.Get("env:<key>")
 ```
 
-This will use the default configuration and without 
-a ``salainen.json`` or ``salainen.yml`` being in the current file 
+This will use the default configuration and without
+a ``salainen.json`` or ``salainen.yml`` being in the current file
 search path or your home directory, it will enable **environmental**
 variables and files.
 
-The prefix value **env** indicates that this is an environmental 
+The prefix value **env** indicates that this is an environmental
 provider secret.
 
 If you call the register function with a configuration file location
@@ -173,7 +174,7 @@ salainen.Set("env:<key>")
 ```
 
 Once the locations are registered
-you do not have to call the registration function within your 
+you do not have to call the registration function within your
 current program function.
 
 ### As command line
@@ -181,13 +182,24 @@ current program function.
 The **salainen** program has a number of arguments, but the common use is
 for setting and getting the secret.
 
-```
+```bash
 salainen env:my_secret  changeme
 ```
 
 And to retrieve it is:
-```
+
+```bash
 salainen env:my_secret
+```
+
+Providers that support setup can be initialised with the `-init` option.
+This is used by the encrypted file and encrypted JSON providers to create
+their directories and, when the `GPG` algorithm is selected, to generate
+a GPG key pair:
+
+```bash
+salainen -provider -init efile
+salainen -provider -init ejson
 ```
 
 ## Future providers

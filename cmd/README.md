@@ -1,34 +1,69 @@
 # Salainen command
 
-The **salainen** command line (CLI) function is provided to enable 
+The **salainen** command line (CLI) function is provided to enable
 a simple function to set and get secrets (passwords, credentials).
 
 There are a number of alternatives available especially if you are
 after a UI.
 
-The **salainen** is primarily intended to be used in Golang projects as 
+The **salainen** is primarily intended to be used in Golang projects as
 a package.
+
+## Provider information and initialisation
+
+List the configured providers:
+
+```bash
+salainen -provider
+```
+
+Show help for a provider:
+
+```bash
+salainen -provider efile
+```
+
+Initialise a provider if it is not already initialised:
+
+```bash
+salainen -provider -init efile
+```
+
+The `-init` option can also follow the provider name:
+
+```bash
+salainen -provider efile -init
+```
+
+For the `efile` and `ejson` providers with `Algorithm` set to `GPG`, the
+initialisation checks whether the provider already has a GPG key. If it
+does not, you are prompted for the values required to generate a key
+(name, email, passphrase and expiry) and the key is added to the GPG
+keyring. See the provider documentation for setup details:
+
+* [Encrypted File](../extensions/encryptedfile/README.md)
+* [Encrypted JSON File](../extensions/ejsons/README.md)
 
 ## Objective
 
-The idea of the package was driven out of a need to use secrets for 
+The idea of the package was driven out of a need to use secrets for
 various assets, such as a database, web service or email service.
 
 A common approach is to use environment variables, but the values should
-not be captured in the source or IDE files that are saved to Git 
+not be captured in the source or IDE files that are saved to Git
 repositories. This presents a challenge as you cannot use scripts for
 local execution or testing very easily.
 
-You could use something like Vault for all your projects, but this could be 
-over engineering for many small projects.  You could use the native 
-cloud key management / secrets solution, but again this might 
+You could use something like Vault for all your projects, but this could be
+over engineering for many small projects.  You could use the native
+cloud key management / secrets solution, but again this might
 not suit for local development.
 
 The secrets also need to recognize that there are different environments
 such as local development, build pipelines, testing, staging and finally
 production.
 
-Your developers may also be on different OSs such as Linux, Mac or Windows. 
+Your developers may also be on different OSs such as Linux, Mac or Windows.
 
 Each of these scenarios can have different secret storage capabilities and
 user needs.
@@ -37,10 +72,10 @@ user needs.
 
 ### Local development scripts
 
-###  Scripting
+### Scripting
 
 As the **salainen** program can execute natively on a many platforms, you can use
-it in scripts such as ``bash`` or ``powershell`` to fetch secrets and then use 
+it in scripts such as ``bash`` or ``powershell`` to fetch secrets and then use
 secret value in accessing secured assets.
 
 Commonly you might save secrets in environment variables, and with **salainen**
@@ -61,6 +96,13 @@ salainen --config ~\.secrets\salainen.json wincred:db_password >
 
 ### Build pipelines
 
+For the build of the **salainen** CLI the recommendation is to use
+the command:
+
+```bash
+go build  -trimpath -ldflags="-s -w"  -o salainen.exe .\cmd\ 
+```
+
 ### Test execution
 
 ### Production execution
@@ -68,11 +110,11 @@ salainen --config ~\.secrets\salainen.json wincred:db_password >
 The **salainen** CLI is not intended to be used in the daily, headless execution of
 code whether it be a CRON job or a web asset.
 
-For these situations you should use the Golang **salainen** package within your 
+For these situations you should use the Golang **salainen** package within your
 Golang application.
 
 You can use the **salainen** CLI to set the secret values that are then consumed
-by you program. 
+by you program.
 
 _NOTE_: Do not use for setting environmental variables only for get.  Use the native
 OS tools for setting environmental variable values.

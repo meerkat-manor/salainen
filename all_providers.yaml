@@ -69,4 +69,5 @@ providers:
       KeyDir: ~/.secrets/salainen/
       PublicKey: 
       PrivateKey: 
+      Algorithm: ""
       ElementName: password

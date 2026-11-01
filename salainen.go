@@ -9,7 +9,7 @@ const (
 	ProviderSeparator string = ":"
 	SaneDefaults      bool   = true
 	ProductName       string = "salainen"
-	ProductVersion    string = "v0.0.8"
+	ProductVersion    string = "v0.0.9"
 	SourceForgeURL    string = "https://github.com/meerkat-manor/salainen/tree/main"
 
 	MaxProviderLength int = 30
@@ -31,6 +31,11 @@ type SecretStorage interface {
 	Init(custom interface{}) error
 	Get(path string) (string, error)
 	Put(path string, value string) error
+}
+
+type SecretStorageInitializer interface {
+	Initialised() (bool, error)
+	Initialise() error
 }
 
 var SecretStorages = map[string]SecretStorage{}

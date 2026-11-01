@@ -13,6 +13,8 @@ import (
 	"golang.design/x/clipboard"
 )
 
+const copyr = "(c) Copyright 2024-2026 Merebox"
+
 func main() {
 
 	configFile := flag.String("config", "", "path to config file")
@@ -23,6 +25,7 @@ func main() {
 	version := flag.Bool("version", false, fmt.Sprintf("%s version", salainen.ProductName))
 
 	providers := flag.Bool("provider", false, "provider request")
+	initProvider := flag.Bool("init", false, "initialise provider if not already initialised")
 
 	sync := flag.NewFlagSet("sync", flag.ExitOnError)
 	fromStorage := sync.String("from", "", "from source storage")
@@ -31,6 +34,15 @@ func main() {
 	flag.Usage = PrintUsage
 
 	flag.Parse()
+
+	// If there is no config supplied, then check for file
+	// in default environment variable
+	if configFile == nil || *configFile == "" {
+		cf := os.Getenv(config.ENV_SALAINEN)
+		if cf != "" {
+			configFile = &cf
+		}
+	}
 
 	if *help {
 		flag.Usage()
@@ -58,7 +70,7 @@ func main() {
 	}
 
 	if *providers {
-		err = process_storage(configFile, flag.Args())
+		err = process_storage(configFile, flag.Args(), *initProvider)
 		if err != nil {
 			fmt.Fprint(os.Stderr, err.Error()+"\n")
 			os.Exit(1)
@@ -66,6 +78,12 @@ func main() {
 			os.Exit(0)
 		}
 		return
+	} else {
+		if *initProvider {
+			fmt.Fprint(os.Stderr, "-init command only applicable with -provider argument\n")
+			os.Exit(0)
+			return
+		}
 	}
 
 	if len(flag.Args()) > 0 {
@@ -181,7 +199,22 @@ func process_default(clip bool, genSecret bool, overwrite bool, args []string) e
 
 }
 
-func process_storage(configFile *string, args []string) error {
+func process_storage(configFile *string, args []string, initProvider ...bool) error {
+
+	doInit := false
+	if len(initProvider) > 0 {
+		doInit = initProvider[0]
+	}
+
+	filteredArgs := make([]string, 0, len(args))
+	for _, arg := range args {
+		if strings.EqualFold(arg, "-init") || strings.EqualFold(arg, "--init") {
+			doInit = true
+			continue
+		}
+		filteredArgs = append(filteredArgs, arg)
+	}
+	args = filteredArgs
 
 	if len(args) > 0 {
 		match := false
@@ -194,6 +227,9 @@ func process_storage(configFile *string, args []string) error {
 					sstorage, err := salainen.GetSecretStorage(key)
 					if err != nil {
 						return fmt.Errorf("processing aborted due to error: %v", err)
+					}
+					if doInit {
+						return initialiseStorage(name, sstorage)
 					}
 					fmt.Printf("Usage information for secret storage provider '%s' (%s) follows\n\n", name, item)
 					sstorage.Help()
@@ -208,67 +244,105 @@ func process_storage(configFile *string, args []string) error {
 		return nil
 
 	} else {
+		if doInit {
+			return fmt.Errorf("a provider name must be supplied with -init")
+		}
 		PrintProviderHelp(configFile)
 		return nil
 	}
 
 }
 
+func initialiseStorage(name string, sstorage salainen.SecretStorage) error {
+
+	initializer, ok := sstorage.(salainen.SecretStorageInitializer)
+	if !ok {
+		fmt.Printf("Provider '%s' does not require initialisation\n", name)
+		return nil
+	}
+
+	initialised, err := initializer.Initialised()
+	if err != nil {
+		return fmt.Errorf("could not determine if provider '%s' is initialised: %v", name, err)
+	}
+	if initialised {
+		fmt.Printf("Provider '%s' is already initialised\n", name)
+		return nil
+	}
+
+	if err := initializer.Initialise(); err != nil {
+		return fmt.Errorf("could not initialise provider '%s': %v", name, err)
+	}
+
+	fmt.Printf("Provider '%s' initialised\n", name)
+	return nil
+}
+
 func PrintUsage() {
-	fmt.Fprintf(os.Stderr, "usage: %s [flags] <secret key> <secret value (save)>\n", salainen.ProductName)
+	w := os.Stderr
+	fmt.Fprintf(w, "usage: %s [flags] <secret key> <secret value (save)>\n", salainen.ProductName)
 	flag.PrintDefaults()
-	fmt.Fprintf(os.Stderr, "\nMore command line information:\n")
+	fmt.Fprintf(w, "\nMore command line information:\n")
 
-	fmt.Fprintf(os.Stderr, "The secret key is made up of two parts:\n")
-	fmt.Fprintf(os.Stderr, "\t* provider type\n")
-	fmt.Fprintf(os.Stderr, "\t* storage key path (within the provider)\n")
-	fmt.Fprintf(os.Stderr, "The key takes the form of <type>%s<path>, that is separated by colon (%s)\n", salainen.ProviderSeparator, salainen.ProviderSeparator)
+	fmt.Fprintf(w, "The secret key is made up of two parts:\n")
+	fmt.Fprintf(w, "\t* provider type\n")
+	fmt.Fprintf(w, "\t* storage key path (within the provider)\n")
+	fmt.Fprintf(w, "The key takes the form of <type>%s<path>, that is separated by colon (%s)\n", salainen.ProviderSeparator, salainen.ProviderSeparator)
 
-	fmt.Fprintf(os.Stderr, "If you only supply the <secret key> then this is a get secret action\n")
-	fmt.Fprintf(os.Stderr, "If you supply the <secret key> and <secret value> then this is a set action of a secret\n\n")
-	fmt.Fprintf(os.Stderr, "Using the -clip flag during secret get saves the value to the clipboard\n")
-	fmt.Fprintf(os.Stderr, "You can provide a configuration file for setting provider attributes\n")
-	fmt.Fprintf(os.Stderr, "Provider attributes are custom to each type\n")
+	fmt.Fprintf(w, "If you only supply the <secret key> then this is a get secret action\n")
+	fmt.Fprintf(w, "If you supply the <secret key> and <secret value> then this is a set action of a secret\n\n")
+	fmt.Fprintf(w, "Using the -clip flag during secret get saves the value to the clipboard\n")
+	fmt.Fprintf(w, "You can provide a configuration file for setting provider attributes\n")
+	fmt.Fprintf(w, "Provider attributes are custom to each type\n")
+	fmt.Fprintf(w, "Use '-provider <type> -init' to initialise a provider if it is not already initialised\n")
 
-	fmt.Fprintf(os.Stderr, "\nSample commands are:\n")
-	fmt.Fprintf(os.Stderr, "\tsalainen wincred:db_password secret  --- saves the 'secret' to Windows credential under key db_password\n")
-	fmt.Fprintf(os.Stderr, "\tsalainen wincred:db_password --- fetches the value from Windows credential under key db_password\n")
-	fmt.Fprintf(os.Stderr, "\tsalainen keyring:db_password secret  --- saves the 'secret' to Linux keyring under key db_password\n")
-	fmt.Fprintf(os.Stderr, "\tsalainen keyring:db_password --- fetches the value from Linux keyring under key db_password\n")
-	fmt.Fprintf(os.Stderr, "\tsalainen efile:db_password.dat secret  --- saves the 'secret' to file named db_password.dat\n")
-	fmt.Fprintf(os.Stderr, "\tsalainen --clip efile:db_password.dat  --- fetches the value to the clipboard from file named db_password.dat\n")
+	fmt.Fprintf(w, "\nSample commands are:\n")
+	fmt.Fprintf(w, "\tsalainen wincred:db_password secret  --- saves the 'secret' to Windows credential under key db_password\n")
+	fmt.Fprintf(w, "\tsalainen wincred:db_password --- fetches the value from Windows credential under key db_password\n")
+	fmt.Fprintf(w, "\tsalainen keyring:db_password secret  --- saves the 'secret' to Linux keyring under key db_password\n")
+	fmt.Fprintf(w, "\tsalainen keyring:db_password --- fetches the value from Linux keyring under key db_password\n")
+	fmt.Fprintf(w, "\tsalainen efile:db_password.dat secret  --- saves the 'secret' to file named db_password.dat\n")
+	fmt.Fprintf(w, "\tsalainen --clip efile:db_password.dat  --- fetches the value to the clipboard from file named db_password.dat\n")
+	fmt.Fprintf(w, "\tsalainen -provider -init efile  --- initialises the efile provider, generating a GPG key when configured\n")
 
-	fmt.Fprintf(os.Stderr, "\nDefining a configuration file allows control over type settings, such as Vault server\n")
+	fmt.Fprintf(w, "\nDefining a configuration file allows control over type settings, such as Vault server\n")
 
-	fmt.Fprintf(os.Stderr, "\nFor more information see %s/cmd\n", salainen.SourceForgeURL)
-	fmt.Fprintf(os.Stderr, "\n(c) Copyright 2025 Merebox\n")
+	fmt.Fprintf(w, "\nFor more information see %s/cmd\n", salainen.SourceForgeURL)
+	fmt.Fprintf(w, "\n%s\n", copyr)
 }
 
 func ProviderStorageTypes(configFile *string) {
-	fmt.Fprintf(os.Stderr, "\nProvider types configured from: %s\n", *configFile)
+	w := os.Stderr
+	fmt.Fprintf(w, "\nProvider types configured from: %s\n", *configFile)
 	app, err := config.New(*configFile, true)
 	if err != nil {
 		log.Fatalf("processing aborted due to error: %v", err)
 	}
 
 	for key, item := range app.StorageName {
-		fmt.Fprintf(os.Stderr, "\t%s (%s)\n", item, key)
+		fmt.Fprintf(w, "\t%s (%s)\n", item, key)
 	}
 
-	fmt.Fprintf(os.Stderr, "\n(c) Copyright 2024 Merebox\n")
+	fmt.Fprintf(w, "\n%s\n", copyr)
 }
 
 func PrintProviderHelp(configFile *string) {
-	fmt.Fprintf(os.Stderr, "\nFor provider type information help include the name as argument\n")
-	fmt.Fprintf(os.Stderr, "\nProvider types configured from: %s\n", *configFile)
+
+	w := os.Stderr
+	fmt.Fprintf(w, "\nFor provider type information help include the name as argument\n")
+	if configFile == nil || *configFile == "" {
+		fmt.Fprintf(w, "\nProvider types are default values as no configuration file\n")
+	} else {
+		fmt.Fprintf(w, "\nProvider types configured from: %s\n", *configFile)
+	}
 	app, err := config.New(*configFile, true)
 	if err != nil {
 		log.Fatalf("processing aborted due to error: %v", err)
 	}
 
 	for key, item := range app.StorageName {
-		fmt.Fprintf(os.Stderr, "\t%s (%s)\n", item, key)
+		fmt.Fprintf(w, "\t%s (%s)\n", item, key)
 	}
 
-	fmt.Fprintf(os.Stderr, "\n(c) Copyright 2024 Merebox\n")
+	fmt.Fprintf(w, "\n%s\n", copyr)
 }
