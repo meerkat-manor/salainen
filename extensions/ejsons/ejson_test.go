@@ -1,8 +1,11 @@
 package ejsons
 
 import (
+	"encoding/json"
 	"os"
 	"path"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -39,6 +42,81 @@ func testInit() {
 func getTestDirectory() string {
 
 	return "../../tests/ejson"
+}
+
+func TestEjsonRejectsPathTraversal(t *testing.T) {
+	testInit()
+	root := t.TempDir()
+	storage, err := New("", map[string]string{
+		"RootPath":    root,
+		"PublicKey":   "68bbde4475f044afdb8869977ab68d17d6354acdec89908bfeeb0c4738803a15",
+		"PrivateKey":  "plain:8fb61adf1cce80d2e205db976a6f99731e9c413ed0887b35b026fc11be377440",
+		"ElementName": "password",
+	})
+	if err != nil {
+		t.Fatalf("failed to create storage: %v", err)
+	}
+	if err := storage.Put("../outside.json", "value"); err == nil {
+		t.Errorf("expected traversal put to be rejected")
+	}
+	if _, err := storage.Get("../outside.json"); err == nil {
+		t.Errorf("expected traversal get to be rejected")
+	}
+}
+
+func TestEjsonRestoresConfiguredPublicKey(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX permission bits are not meaningful on Windows")
+	}
+	testInit()
+	root := t.TempDir()
+	const publicKey = "68bbde4475f044afdb8869977ab68d17d6354acdec89908bfeeb0c4738803a15"
+	storage, err := New("", map[string]string{
+		"RootPath":    root,
+		"PublicKey":   publicKey,
+		"PrivateKey":  "plain:8fb61adf1cce80d2e205db976a6f99731e9c413ed0887b35b026fc11be377440",
+		"ElementName": "password",
+	})
+	if err != nil {
+		t.Fatalf("failed to create storage: %v", err)
+	}
+
+	file := filepath.Join(root, "secret.json")
+	if err := storage.Put("secret.json", "value"); err != nil {
+		t.Fatalf("unexpected put error: %v", err)
+	}
+
+	data, err := os.ReadFile(file)
+	if err != nil {
+		t.Fatalf("failed to read ejson file: %v", err)
+	}
+	var document map[string]interface{}
+	if err := json.Unmarshal(data, &document); err != nil {
+		t.Fatalf("failed to parse ejson file: %v", err)
+	}
+	document["_public_key"] = "attacker-controlled-key"
+	tampered, err := json.Marshal(document)
+	if err != nil {
+		t.Fatalf("failed to marshal tampered document: %v", err)
+	}
+	if err := os.WriteFile(file, tampered, 0o600); err != nil {
+		t.Fatalf("failed to write tampered document: %v", err)
+	}
+
+	if err := storage.Put("secret.json", "updated"); err != nil {
+		t.Fatalf("unexpected second put error: %v", err)
+	}
+	data, err = os.ReadFile(file)
+	if err != nil {
+		t.Fatalf("failed to reread ejson file: %v", err)
+	}
+	document = nil
+	if err := json.Unmarshal(data, &document); err != nil {
+		t.Fatalf("failed to parse updated ejson file: %v", err)
+	}
+	if document["_public_key"] != publicKey {
+		t.Errorf("configured public key was not restored: %v", document["_public_key"])
+	}
 }
 
 func TestSimpleEjsonCreate(t *testing.T) {

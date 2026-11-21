@@ -47,7 +47,7 @@ func registerCmdFakeStorage(t *testing.T) *cmdFakeStorage {
 	storage := newCmdFakeStorage()
 	salainen.AddSecretStorage("cmdtest", storage)
 	t.Cleanup(func() {
-		delete(salainen.SecretStorages, "cmdtest")
+		salainen.RemoveSecretStorage("cmdtest")
 	})
 	return storage
 }

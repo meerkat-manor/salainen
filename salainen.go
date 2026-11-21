@@ -3,6 +3,7 @@ package salainen
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
 
 const (
@@ -38,7 +39,10 @@ type SecretStorageInitializer interface {
 	Initialise() error
 }
 
-var SecretStorages = map[string]SecretStorage{}
+var (
+	SecretStorages = map[string]SecretStorage{}
+	registryMu     sync.RWMutex
+)
 
 func Get(key string) (string, error) {
 
@@ -81,16 +85,33 @@ func Put(key string, value string) error {
 }
 
 func AddSecretStorage(name string, secretStorage SecretStorage) {
+	registryMu.Lock()
+	defer registryMu.Unlock()
 	SecretStorages[name] = secretStorage
 }
 
+func RemoveSecretStorage(name string) {
+	registryMu.Lock()
+	defer registryMu.Unlock()
+	delete(SecretStorages, name)
+}
+
 func ListSecretStorage() map[string]SecretStorage {
-	return SecretStorages
+	registryMu.RLock()
+	defer registryMu.RUnlock()
+
+	storages := make(map[string]SecretStorage, len(SecretStorages))
+	for name, storage := range SecretStorages {
+		storages[name] = storage
+	}
+	return storages
 }
 
 func GetSecretStorage(id string) (SecretStorage, error) {
 
+	registryMu.RLock()
 	storage, exists := SecretStorages[id]
+	registryMu.RUnlock()
 	if !exists {
 		return nil, ErrInvalidProvider
 	}
@@ -129,7 +150,9 @@ func SearchSecretStorage(id string) (SecretStorage, string, error) {
 		return nil, "", ErrInvalidProvider
 	}
 
+	registryMu.RLock()
 	storage, exists := SecretStorages[id[:idx]]
+	registryMu.RUnlock()
 	if !exists {
 		return nil, "", ErrInvalidProvider
 	}

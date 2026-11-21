@@ -11,6 +11,8 @@ import (
 	"github.com/Shopify/ejson"
 	"github.com/meerkat-manor/salainen"
 	"github.com/meerkat-manor/salainen/extensions/gpgutil"
+	"github.com/meerkat-manor/salainen/internal/pathlock"
+	"github.com/meerkat-manor/salainen/internal/securepath"
 )
 
 const (
@@ -175,7 +177,13 @@ func (sl *f) Put(path string, val string) error {
 	}
 
 	parts := strings.SplitN(path, "|", 2)
-	fpath := parts[0]
+	fpath, err := securepath.Resolve(sl.RootPath, path)
+	if err != nil {
+		return err
+	}
+
+	pathlock.Lock(fpath)
+	defer pathlock.Unlock(fpath)
 
 	recipient := sl.GPG.Recipient
 	passphrase := sl.GPG.Passphrase
@@ -190,19 +198,7 @@ func (sl *f) Put(path string, val string) error {
 		return fmt.Errorf("no GPG recipient configured. Run the provider -init option or set GPGRecipient")
 	}
 
-	if sl.RootPath != "" {
-		fpath = filepath.Join(sl.RootPath, fpath)
-	}
-	if strings.HasPrefix(fpath, "~/") || strings.HasPrefix(fpath, "~\\") {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return err
-		}
-		fpath = filepath.Join(homeDir, fpath[2:])
-	}
-
 	var contents []byte
-	var err error
 
 	if fi, err := os.Stat(fpath); err != nil {
 		contents = []byte("{}")
@@ -239,15 +235,7 @@ func (sl *f) Put(path string, val string) error {
 	}
 
 	if sl.Algorithm == EJSON {
-		// Check elements and add as necessary
-		chkVal, exists := jsonData["_public_key"]
-		if exists {
-			if chkVal == "" {
-				jsonData["_public_key"] = sl.PublicKey
-			}
-		} else {
-			jsonData["_public_key"] = sl.PublicKey
-		}
+		jsonData["_public_key"] = sl.PublicKey
 	}
 
 	jsonData[sl.ElementName] = val
@@ -282,15 +270,15 @@ func (sl *f) Put(path string, val string) error {
 	}
 
 	parent := filepath.Dir(fpath)
-	if _, err := os.Stat(parent); err != nil {
-		err := os.MkdirAll(parent, fileMode)
-		if err != nil {
-			return fmt.Errorf("failed to create directory for ejson file")
-		}
+	if err := os.MkdirAll(parent, 0o700); err != nil {
+		return fmt.Errorf("failed to create directory for ejson file: %v", err)
 	}
 
 	if err := os.WriteFile(fpath, contents, 0o600); err != nil {
 		return fmt.Errorf("could not write encrypt JSON file. Error: %v", err)
+	}
+	if err := os.Chmod(fpath, 0o600); err != nil {
+		return err
 	}
 
 	return nil
@@ -303,29 +291,19 @@ func (sl *f) Get(path string) (string, error) {
 	}
 
 	parts := strings.SplitN(path, "|", 2)
-	fpath := parts[0]
+	fpath, err := securepath.Resolve(sl.RootPath, path)
+	if err != nil {
+		return "", err
+	}
+
+	pathlock.RLock(fpath)
+	defer pathlock.RUnlock(fpath)
 
 	passphrase := sl.GPG.Passphrase
 	if sl.Algorithm == GPG && len(parts) == 2 && parts[1] != "" {
 		if exists, err := sl.gpgConfig(parts[1]).KeyExists(parts[1]); err != nil || !exists {
 			passphrase = parts[1]
 		}
-	}
-
-	if sl.RootPath != "" {
-		fpath = filepath.Join(sl.RootPath, fpath)
-	}
-	if strings.HasPrefix(fpath, "~/") || strings.HasPrefix(fpath, "~\\") {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		fpath = filepath.Join(homeDir, fpath[2:])
-	}
-
-	parent := filepath.Dir(fpath)
-	if _, err := os.Stat(parent); err != nil {
-		return "", fmt.Errorf("directory '%s' does not exist", parent)
 	}
 
 	if _, err := os.Stat(fpath); err != nil {
@@ -337,7 +315,6 @@ func (sl *f) Get(path string) (string, error) {
 
 	// Decrypt file
 	var data []byte
-	var err error
 
 	if sl.Algorithm == GPG {
 		contents, err := os.ReadFile(fpath)
@@ -452,7 +429,7 @@ func (sl *f) Initialise() error {
 
 	if sl.Algorithm != GPG {
 		if sl.RootPath != "" {
-			return os.MkdirAll(sl.rootPath(), 0o600)
+			return os.MkdirAll(sl.rootPath(), 0o700)
 		}
 		return nil
 	}
@@ -467,19 +444,44 @@ func (sl *f) Initialise() error {
 
 	name := sl.GPG.Name
 	if name == "" {
-		name = gpgutil.Prompt("GPG key name", gpgutil.DefaultName(), false)
+		var err error
+		name, err = gpgutil.PromptResult("GPG key name", gpgutil.DefaultName(), false)
+		if err != nil {
+			return err
+		}
 	}
 	email := sl.GPG.Email
 	if email == "" {
-		email = gpgutil.Prompt("GPG key email", gpgutil.DefaultEmail(name), false)
+		var err error
+		email, err = gpgutil.PromptResult("GPG key email", gpgutil.DefaultEmail(name), false)
+		if err != nil {
+			return err
+		}
 	}
 	passphrase := sl.GPG.Passphrase
 	if !sl.GPG.passphraseSet {
-		passphrase = gpgutil.Prompt("GPG key passphrase (blank for none)", "", true)
+		var err error
+		passphrase, err = gpgutil.PromptResult("GPG key passphrase (blank for none)", "", true)
+		if err != nil {
+			return err
+		}
+		if passphrase == "" {
+			confirmed, err := gpgutil.ConfirmUnprotectedKey()
+			if err != nil {
+				return err
+			}
+			if !confirmed {
+				return fmt.Errorf("an unprotected GPG key was not confirmed")
+			}
+		}
 	}
 	expireDate := sl.GPG.ExpireDate
 	if expireDate == "" {
-		expireDate = gpgutil.Prompt("GPG key expiry (0 = never)", "0", false)
+		var err error
+		expireDate, err = gpgutil.PromptResult("GPG key expiry (0 = never)", "0", false)
+		if err != nil {
+			return err
+		}
 	}
 
 	gpgConfig := sl.gpgConfig("")

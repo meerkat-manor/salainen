@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/meerkat-manor/salainen"
 	"github.com/meerkat-manor/salainen/extensions/bitwarden/genbw"
+	"github.com/meerkat-manor/salainen/internal/netutil"
 	"github.com/oapi-codegen/runtime/types"
 )
 
@@ -79,6 +80,16 @@ func (sl *f) Init(custom interface{}) error {
 			}
 		}
 	}
+	if sl.ApiUrl != "" {
+		if err := netutil.ValidateEndpoint(sl.ApiUrl); err != nil {
+			return err
+		}
+	}
+	if sl.IdentityURL != "" {
+		if err := netutil.ValidateEndpoint(sl.IdentityURL); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -94,12 +105,12 @@ func (sl *f) Put(path, val string) error {
 }
 
 func (sl *f) Get(path string) (string, error) {
-
 	getData := ""
-
-	httpClient := &http.Client{}
 	server := sl.ApiUrl
 
+	if err := netutil.ValidateEndpoint(server); err != nil {
+		return "", err
+	}
 	if sl.AccessToken == "" {
 		return "", fmt.Errorf("no access token for %s provided", sl.ProductName)
 	}
@@ -114,33 +125,32 @@ func (sl *f) Get(path string) (string, error) {
 
 	unlocked := false
 
-	client, errC := genbw.NewClientWithResponses(server, genbw.WithHTTPClient(httpClient))
+	client, errC := genbw.NewClientWithResponses(server, genbw.WithHTTPClient(netutil.NewHTTPClient()))
 	if errC != nil {
 		return "", fmt.Errorf("error making %s client. Error: %v", sl.ProductName, errC)
 	}
 
-	// Check status
 	resp, err := client.GetStatus(context.Background())
 	if err != nil {
 		return "", fmt.Errorf("error with status check on %s. Error: %v", sl.ProductName, err)
-	} else {
-		defer resp.Body.Close()
-		builder := new(strings.Builder)
-		_, err := io.Copy(builder, resp.Body)
-		if err != nil {
-			fmt.Printf("error with reading %s response body: %v", sl.ProductName, err)
-		} else {
-			data := builder.String()
-
-			var status genbw.Status
-			err = json.Unmarshal([]byte(data), &status)
-			if err != nil {
-				fmt.Printf("error during Unmarshal(): %s", err)
-			}
-			if *status.Data.Template.Status == genbw.Unlocked {
-				unlocked = true
-			}
-		}
+	}
+	if resp == nil || resp.Body == nil {
+		return "", fmt.Errorf("status check on %s returned no response", sl.ProductName)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("status check on %s returned status code: %d", sl.ProductName, resp.StatusCode)
+	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("error reading %s status response: %v", sl.ProductName, err)
+	}
+	var status genbw.Status
+	if err := json.Unmarshal(data, &status); err != nil {
+		return "", fmt.Errorf("error parsing %s status response: %v", sl.ProductName, err)
+	}
+	if status.Data != nil && status.Data.Template != nil && status.Data.Template.Status != nil && *status.Data.Template.Status == genbw.Unlocked {
+		unlocked = true
 	}
 
 	if !unlocked {
@@ -151,31 +161,18 @@ func (sl *f) Get(path string) (string, error) {
 		respU, errU := client.PostUnlock(context.Background(), unlock)
 		if errU != nil {
 			return "", fmt.Errorf("error unlocking %s. Error: %v", sl.ProductName, errU)
-		} else {
-			if respU.StatusCode != 200 {
-				return "", fmt.Errorf("error unlocking %s with status code: %d", sl.ProductName, respU.StatusCode)
-				/*
-					// Is this needed TODO
-					if respU.ContentLength > 0 {
-						defer respU.Body.Close()
-						builder := new(strings.Builder)
-						_, err := io.Copy(builder, respU.Body)
-						if err != nil {
-							fmt.Printf("error with reading %s response body: %v", sl.ProductName, err)
-						} else {
-							//data := builder.String()
-							//fmt.Printf("DEBUG BW get body: %s\n", data)
-						}
-					}
-				*/
-			} else {
-				unlocked = true
-			}
 		}
+		if respU == nil || respU.Body == nil {
+			return "", fmt.Errorf("unlock request to %s returned no response", sl.ProductName)
+		}
+		defer respU.Body.Close()
+		if respU.StatusCode != http.StatusOK {
+			return "", fmt.Errorf("error unlocking %s with status code: %d", sl.ProductName, respU.StatusCode)
+		}
+		unlocked = true
 	}
 
 	if unlocked {
-
 		id, errUI := uuid.Parse(path)
 		if errUI == nil {
 			getData, err = sl.getItemByUUID(client, id)
@@ -183,27 +180,22 @@ func (sl *f) Get(path string) (string, error) {
 				return "", fmt.Errorf("error fetching %s item (UUID). Error: %v", sl.ProductName, err)
 			}
 		} else {
-
 			parts := strings.Split(path, "/")
-			if len(parts) < 2 {
-
-			} else {
+			if len(parts) >= 2 {
 				parent := parts[0]
 				for ix := 1; ix < (len(parts) - 1); ix++ {
 					parent = parent + "/" + parts[ix]
 				}
-				folderId, err := sl.getFolders(client, parent)
+				folderID, err := sl.getFolders(client, parent)
 				if err != nil {
 					return "", fmt.Errorf("error fetching %s folders (path). Error: %v", sl.ProductName, err)
 				}
-				getData, err = sl.getItemByFolder(client, folderId, &parts[len(parts)-1])
+				getData, err = sl.getItemByFolder(client, folderID, &parts[len(parts)-1])
 				if err != nil {
 					return "", fmt.Errorf("error fetching %s item (path). Error: %v", sl.ProductName, err)
 				}
 			}
-
 		}
-
 	}
 
 	return getData, nil
@@ -240,33 +232,30 @@ func (sl *f) getFolders(client *genbw.ClientWithResponses, folder string) (*type
 	if err != nil {
 		return nil, fmt.Errorf("error fetching %s folders. Error: %v", sl.ProductName, err)
 	}
-	if resp.StatusCode != 200 {
+	if resp == nil || resp.Body == nil {
+		return nil, fmt.Errorf("folder listing returned no response")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("error fetching %s folders with status code: %d", sl.ProductName, resp.StatusCode)
 	}
-	if resp.ContentLength > 0 {
-		defer resp.Body.Close()
-		builder := new(strings.Builder)
-		_, err := io.Copy(builder, resp.Body)
-		if err != nil {
-			return nil, fmt.Errorf("error with reading %s response body: %v", sl.ProductName, err)
-		} else {
-			data := builder.String()
-			var folderList FolderList
-			err = json.Unmarshal([]byte(data), &folderList)
-			if err != nil {
-				//fmt.Printf("error during Unmarshal(): %s", err)
-			}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error with reading %s response body: %v", sl.ProductName, err)
+	}
+	var folderList FolderList
+	if err := json.Unmarshal(data, &folderList); err != nil {
+		return nil, fmt.Errorf("error parsing %s folder response: %v", sl.ProductName, err)
+	}
 
-			if folderList.Success && len(folderList.Data.Data) > 0 {
-				for _, item := range folderList.Data.Data {
-					if item.Name == folder {
-						id, err := uuid.Parse(item.Id)
-						if err != nil {
-							return nil, err
-						}
-						return &id, nil
-					}
+	if folderList.Success {
+		for _, item := range folderList.Data.Data {
+			if item.Name == folder {
+				id, err := uuid.Parse(item.Id)
+				if err != nil {
+					return nil, err
 				}
+				return &id, nil
 			}
 		}
 	}
@@ -274,45 +263,46 @@ func (sl *f) getFolders(client *genbw.ClientWithResponses, folder string) (*type
 	return nil, fmt.Errorf("error when listing folders")
 }
 
-func (sl *f) getItemByFolder(client *genbw.ClientWithResponses, folderId *types.UUID, itemName *string) (string, error) {
-
-	// fmt.Printf("DEBUG item by folder/name: %v %s\n", folderId, *itemName)
+func (sl *f) getItemByFolder(client *genbw.ClientWithResponses, folderID *types.UUID, itemName *string) (string, error) {
+	if itemName == nil || *itemName == "" {
+		return "", fmt.Errorf("no item name provided")
+	}
 
 	parms := genbw.GetListObjectItemsParams{
-		Folderid: folderId,
+		Folderid: folderID,
 	}
 
 	resp, err := client.GetListObjectItems(context.Background(), &parms)
 	if err != nil {
 		return "", fmt.Errorf("error fetching %s item. Error: %v", sl.ProductName, err)
 	}
-	if resp.StatusCode != 200 {
+	if resp == nil || resp.Body == nil {
+		return "", fmt.Errorf("item listing returned no response")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("error fetching %s item with status code: %d", sl.ProductName, resp.StatusCode)
 	}
-	if resp.ContentLength > 0 {
-		defer resp.Body.Close()
-		builder := new(strings.Builder)
-		_, err := io.Copy(builder, resp.Body)
-		if err != nil {
-			fmt.Printf("error with reading %s response body: %v\n", sl.ProductName, err)
-		} else {
-			data := builder.String()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("error with reading %s response body: %v", sl.ProductName, err)
+	}
+	var itemList ItemList
+	if err := json.Unmarshal(data, &itemList); err != nil {
+		return "", fmt.Errorf("error parsing %s item response: %v", sl.ProductName, err)
+	}
 
-			var itemList ItemList
-			err = json.Unmarshal([]byte(data), &itemList)
-			if err != nil {
-				// fmt.Printf("error during Unmarshal(): %s", err)
+	if itemList.Success {
+		for _, item := range itemList.Data.Data {
+			matched := item.Name != nil && *item.Name == *itemName
+			if item.Login != nil && item.Login.Username != nil && *item.Login.Username == *itemName {
+				matched = true
 			}
-
-			if itemList.Success && len(itemList.Data.Data) > 0 {
-				for _, item := range itemList.Data.Data {
-					if *item.Name == *itemName || (item.Login != nil && *item.Login.Username == *itemName) {
-						if item.Login.Password == nil {
-							return "", fmt.Errorf("no password recorded")
-						}
-						return *item.Login.Password, nil
-					}
+			if matched {
+				if item.Login == nil || item.Login.Password == nil {
+					return "", fmt.Errorf("no password recorded")
 				}
+				return *item.Login.Password, nil
 			}
 		}
 	}
@@ -326,36 +316,26 @@ func (sl *f) getItemByUUID(client *genbw.ClientWithResponses, id uuid.UUID) (str
 	if err != nil {
 		return "", fmt.Errorf("error fetching %s item. Error: %v", sl.ProductName, err)
 	}
-
-	if resp.StatusCode != 200 {
+	if resp == nil || resp.Body == nil {
+		return "", fmt.Errorf("password fetch returned no response")
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("error fetching %s item with status code: %d", sl.ProductName, resp.StatusCode)
 	}
 
-	if resp.ContentLength < 1 {
-		return "", fmt.Errorf("password fetch unsuccessful")
-	}
-
-	defer resp.Body.Close()
-	builder := new(strings.Builder)
-	_, err = io.Copy(builder, resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("error with reading %s response body: %v", sl.ProductName, err)
-	} else {
-		data := builder.String()
-
-		var itemPassword ItemPassword
-		err = json.Unmarshal([]byte(data), &itemPassword)
-		if err != nil {
-			fmt.Printf("error during Unmarshal(): %s", err)
-		}
-
-		if itemPassword.Success {
-			return itemPassword.Data.Data, nil
-		} else {
-			return "", fmt.Errorf("password fetch unsuccessful")
-		}
 	}
-
+	var itemPassword ItemPassword
+	if err := json.Unmarshal(data, &itemPassword); err != nil {
+		return "", fmt.Errorf("error parsing %s password response: %v", sl.ProductName, err)
+	}
+	if !itemPassword.Success {
+		return "", fmt.Errorf("password fetch unsuccessful")
+	}
+	return itemPassword.Data.Data, nil
 }
 
 func New(config string, custom interface{}) (salainen.SecretStorage, error) {

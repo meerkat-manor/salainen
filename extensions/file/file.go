@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/meerkat-manor/salainen"
+	"github.com/meerkat-manor/salainen/internal/pathlock"
+	"github.com/meerkat-manor/salainen/internal/securepath"
 )
 
 type f struct {
@@ -33,35 +35,23 @@ func (sl *f) Init(custom interface{}) error {
 }
 
 func (sl *f) Put(path string, val string) error {
-	parts := strings.SplitN(path, "|", 2)
-	fpath := parts[0]
-
-	// Check for path traversal
-	if strings.Contains(fpath, "..") {
-		return fmt.Errorf("paths cannot contain '..' to prevent path traversal")
+	fpath, err := securepath.Resolve(sl.RootPath, path)
+	if err != nil {
+		return err
 	}
 
-	if sl.RootPath != "" {
-		fpath = filepath.Join(sl.RootPath, fpath)
-	}
-	if strings.HasPrefix(fpath, "~/") || strings.HasPrefix(fpath, "~\\") {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return err
-		}
-		fpath = filepath.Join(homeDir, fpath[2:])
-	}
+	pathlock.Lock(fpath)
+	defer pathlock.Unlock(fpath)
 
 	parent := filepath.Dir(fpath)
-	if _, err := os.Stat(parent); err != nil {
-		err := os.MkdirAll(parent, 0o600)
-		if err != nil {
-			return fmt.Errorf("failed to create directory for secret file")
-		}
+	if err := os.MkdirAll(parent, 0o700); err != nil {
+		return fmt.Errorf("failed to create directory for secret file: %v", err)
 	}
 
-	err := os.WriteFile(fpath, []byte(val), 0o600)
-	if err != nil {
+	if err := os.WriteFile(fpath, []byte(val), 0o600); err != nil {
+		return err
+	}
+	if err := os.Chmod(fpath, 0o600); err != nil {
 		return err
 	}
 
@@ -69,29 +59,13 @@ func (sl *f) Put(path string, val string) error {
 }
 
 func (sl *f) Get(path string) (string, error) {
-	parts := strings.SplitN(path, "|", 2)
-	fpath := parts[0]
-
-	// Check for path traversal
-	if strings.Contains(fpath, "..") {
-		return "", fmt.Errorf("paths cannot contain '..' to prevent path traversal")
+	fpath, err := securepath.Resolve(sl.RootPath, path)
+	if err != nil {
+		return "", err
 	}
 
-	if sl.RootPath != "" {
-		fpath = filepath.Join(sl.RootPath, fpath)
-	}
-	if strings.HasPrefix(fpath, "~/") || strings.HasPrefix(fpath, "~\\") {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		fpath = filepath.Join(homeDir, fpath[2:])
-	}
-
-	parent := filepath.Dir(fpath)
-	if _, err := os.Stat(parent); err != nil {
-		return "", fmt.Errorf("directory '%s' does not exist", parent)
-	}
+	pathlock.RLock(fpath)
+	defer pathlock.RUnlock(fpath)
 
 	data, err := os.ReadFile(fpath)
 	if err != nil {

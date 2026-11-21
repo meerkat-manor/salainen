@@ -40,7 +40,7 @@ func registerFake(t *testing.T, name string, storage *fakeStorage) {
 	t.Helper()
 	AddSecretStorage(name, storage)
 	t.Cleanup(func() {
-		delete(SecretStorages, name)
+		RemoveSecretStorage(name)
 	})
 }
 

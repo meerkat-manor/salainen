@@ -41,7 +41,7 @@ func registerBWPlain(t *testing.T, value string, err error) {
 	t.Helper()
 	salainen.AddSecretStorage("plain", &bwPlainStorage{value: value, err: err})
 	t.Cleanup(func() {
-		delete(salainen.SecretStorages, "plain")
+		salainen.RemoveSecretStorage("plain")
 	})
 }
 
@@ -165,18 +165,18 @@ func TestBitwardenNewAndInit(t *testing.T) {
 	}
 
 	storage, err = New("", map[string]string{
-		"ApiUrl":      "http://api",
-		"IdentityURL": "http://identity",
+		"ApiUrl":      "https://api",
+		"IdentityURL": "https://identity",
 		"AccessToken": "plain:master",
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	provider = storage.(*f)
-	if provider.ApiUrl != "http://api" {
+	if provider.ApiUrl != "https://api" {
 		t.Errorf("unexpected API URL: %q", provider.ApiUrl)
 	}
-	if provider.IdentityURL != "http://identity" {
+	if provider.IdentityURL != "https://identity" {
 		t.Errorf("unexpected identity URL: %q", provider.IdentityURL)
 	}
 	if provider.AccessToken != "plain:master" {
@@ -194,7 +194,7 @@ func TestBitwardenRegisterHelpPut(t *testing.T) {
 		t.Fatalf("failed to register: %v", err)
 	}
 	t.Cleanup(func() {
-		delete(salainen.SecretStorages, "bitwarden")
+		salainen.RemoveSecretStorage("bitwarden")
 	})
 
 	storage, err := salainen.GetSecretStorage("bitwarden")
@@ -320,6 +320,31 @@ func TestBitwardenGetErrors(t *testing.T) {
 		registerBWPlain(t, "", fmt.Errorf("lookup failed"))
 		storage := &f{AccessToken: "plain:master"}
 		if _, err := storage.Get("path"); err == nil {
+			t.Errorf("expected error")
+		}
+	})
+
+	t.Run("malformed status response", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			writeBWResponse(w, http.StatusOK, "not-json")
+		}))
+		defer server.Close()
+
+		registerBWPlain(t, "master", nil)
+		storage := &f{ApiUrl: server.URL, AccessToken: "plain:master"}
+		if _, err := storage.Get(testItemID); err == nil {
+			t.Errorf("expected error")
+		}
+	})
+
+	t.Run("incomplete item response", func(t *testing.T) {
+		state := newBWState()
+		state.items = `{"success":true,"data":{"object":"list","data":[{"login":{"password":"secret"}}]}}`
+		server := newBWServer(t, state)
+
+		registerBWPlain(t, "master", nil)
+		storage := &f{ApiUrl: server.URL, AccessToken: "plain:master"}
+		if _, err := storage.Get("folder/item"); err == nil {
 			t.Errorf("expected error")
 		}
 	})

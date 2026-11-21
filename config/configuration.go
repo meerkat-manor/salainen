@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync/atomic"
 
 	"github.com/meerkat-manor/salainen"
 	"github.com/meerkat-manor/salainen/extensions/bitwarden"
@@ -23,7 +24,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-var debugState = false
+var debugState atomic.Bool
 
 type ProviderType string
 
@@ -55,9 +56,10 @@ type ApplicationRun struct {
 
 func New(configFile string, ignoreProviderErrors bool) (*ApplicationRun, error) {
 
-	// Check for debug
+	explicitConfig := configFile != ""
+
 	debugEnv := strings.ToUpper(os.Getenv(strings.ToUpper(salainen.ProductName) + "_DEBUG"))
-	debugState = debugEnv == "TRUE" || debugEnv == "YES" || debugEnv == "1"
+	debugState.Store(debugEnv == "TRUE" || debugEnv == "YES" || debugEnv == "1")
 
 	// Check if config file exists
 	if configFile != "" {
@@ -147,7 +149,13 @@ func New(configFile string, ignoreProviderErrors bool) (*ApplicationRun, error) 
 		}
 	}
 
-	if debugState {
+	if !explicitConfig && configFile != "" {
+		if err := validateDiscoveredConfig(configFile); err != nil {
+			return nil, err
+		}
+	}
+
+	if debugState.Load() {
 		if configFile == "" {
 			fmt.Printf("DEBUG>> no configuration file set\n")
 		} else {
@@ -364,15 +372,6 @@ func loadConfig(configFile string) (*ApplicationConfiguration, error) {
 			return nil, fmt.Errorf("error parsing JSON configuration file '%s'. Error: %v", configFile, err)
 		}
 
-		// Under DEBUG Save a YAML copy, just to ensure we have up to date YAML version
-		if debugState {
-			content, errY := yaml.Marshal(appConfig)
-			if errY == nil {
-				oFileName := configFile + ".yaml"
-				os.WriteFile(oFileName, content, 0o600)
-			}
-		}
-
 	} else {
 
 		err := yaml.Unmarshal(dataBuf, &appConfig)
@@ -384,27 +383,48 @@ func loadConfig(configFile string) (*ApplicationConfiguration, error) {
 	return &appConfig, nil
 }
 
+func safeDiscoveredConfig(fi os.FileInfo) bool {
+	if runtime.GOOS == "windows" {
+		return true
+	}
+	return fi.Mode().Perm()&0o022 == 0
+}
+
+func validateDiscoveredConfig(path string) error {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return fmt.Errorf("configuration file '%s' not found", path)
+	}
+	if fi.IsDir() {
+		return fmt.Errorf("configuration file '%s' is a directory", path)
+	}
+	if !safeDiscoveredConfig(fi) {
+		return fmt.Errorf("configuration file '%s' must not be group or world writable", path)
+	}
+	return nil
+}
+
 func checkConfigurationFile(path string) string {
 
-	if debugState {
+	if debugState.Load() {
 		fmt.Printf("DEBUG>> testing configuration file path: %s\n", path)
 	}
 
 	tFile := filepath.Join(path, salainen.ProductName+".json")
 	fi, err := os.Stat(tFile)
-	if err == nil && !fi.IsDir() {
+	if err == nil && !fi.IsDir() && safeDiscoveredConfig(fi) {
 		return tFile
 	}
 
 	tFile = filepath.Join(path, salainen.ProductName+".yaml")
 	fi, err = os.Stat(tFile)
-	if err == nil && !fi.IsDir() {
+	if err == nil && !fi.IsDir() && safeDiscoveredConfig(fi) {
 		return tFile
 	}
 
 	tFile = filepath.Join(path, salainen.ProductName+".yml")
 	fi, err = os.Stat(tFile)
-	if err == nil && !fi.IsDir() {
+	if err == nil && !fi.IsDir() && safeDiscoveredConfig(fi) {
 		return tFile
 	}
 

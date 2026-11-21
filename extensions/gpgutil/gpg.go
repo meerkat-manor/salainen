@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -15,6 +17,12 @@ import (
 )
 
 const DefaultExecutable = "gpg"
+
+var (
+	namePattern   = regexp.MustCompile(`^[\p{L}\p{N} .,'_-]{1,100}$`)
+	emailPattern  = regexp.MustCompile(`^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+$`)
+	expiryPattern = regexp.MustCompile(`^(0|[1-9][0-9]*[dwmy]?)$`)
+)
 
 type Config struct {
 	Executable string
@@ -79,7 +87,7 @@ func ReadMarker(path string) (*Marker, error) {
 func WriteMarker(path string, marker Marker) error {
 	parent := filepath.Dir(path)
 	if _, err := os.Stat(parent); err != nil {
-		if err := os.MkdirAll(parent, 0o600); err != nil {
+		if err := os.MkdirAll(parent, 0o700); err != nil {
 			return err
 		}
 	}
@@ -89,10 +97,21 @@ func WriteMarker(path string, marker Marker) error {
 		return err
 	}
 
-	return os.WriteFile(path, data, 0o600)
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		return err
+	}
+	return os.Chmod(path, 0o600)
 }
 
 func Prompt(label string, defaultValue string, secret bool) string {
+	result, err := PromptResult(label, defaultValue, secret)
+	if err != nil {
+		return defaultValue
+	}
+	return result
+}
+
+func PromptResult(label string, defaultValue string, secret bool) (string, error) {
 	prompt := promptui.Prompt{
 		Label:       label,
 		Default:     defaultValue,
@@ -101,12 +120,20 @@ func Prompt(label string, defaultValue string, secret bool) string {
 
 	result, err := prompt.Run()
 	if err != nil {
-		return defaultValue
+		return "", err
 	}
 	if result == "" {
-		return defaultValue
+		return defaultValue, nil
 	}
-	return result
+	return result, nil
+}
+
+func ConfirmUnprotectedKey() (bool, error) {
+	answer, err := PromptResult("Create an unprotected GPG key? Type 'yes' to confirm", "", false)
+	if err != nil {
+		return false, err
+	}
+	return strings.EqualFold(strings.TrimSpace(answer), "yes"), nil
 }
 
 func DefaultName() string {
@@ -141,19 +168,15 @@ func (c Config) baseArgs() []string {
 	return args
 }
 
-func (c Config) passphraseArgs() []string {
-	if c.Passphrase == "" {
-		return nil
-	}
-	return []string{"--pinentry-mode", "loopback", "--passphrase", c.Passphrase}
-}
-
 func (c Config) checkExecutable() error {
+	if c.Executable != "" && !filepath.IsAbs(c.Executable) {
+		return fmt.Errorf("GPG executable must be an absolute path when configured")
+	}
 	if _, err := exec.LookPath(c.execName()); err != nil {
 		return fmt.Errorf("GPG executable '%s' not found. Please install GPG and ensure it is on the PATH", c.execName())
 	}
 	if c.HomeDir != "" {
-		if err := os.MkdirAll(ExpandPath(c.HomeDir), 0o600); err != nil {
+		if err := os.MkdirAll(ExpandPath(c.HomeDir), 0o700); err != nil {
 			return fmt.Errorf("could not create GPG home directory '%s'. Error: %v", c.HomeDir, err)
 		}
 	}
@@ -161,11 +184,38 @@ func (c Config) checkExecutable() error {
 }
 
 func (c Config) run(input []byte, args ...string) ([]byte, error) {
+	return c.runWithPassphrase(input, "", args...)
+}
+
+func (c Config) runWithPassphrase(input []byte, passphrase string, args ...string) ([]byte, error) {
 	if err := c.checkExecutable(); err != nil {
 		return nil, err
 	}
 
-	cmd := exec.Command(c.execName(), args...)
+	allArgs := make([]string, 0, len(args)+4)
+	if passphrase != "" {
+		file, err := os.CreateTemp("", "salainen-gpg-passphrase-*")
+		if err != nil {
+			return nil, err
+		}
+		passphrasePath := file.Name()
+		defer os.Remove(passphrasePath)
+		if err := file.Chmod(0o600); err != nil {
+			file.Close()
+			return nil, err
+		}
+		if _, err := file.WriteString(passphrase + "\n"); err != nil {
+			file.Close()
+			return nil, err
+		}
+		if err := file.Close(); err != nil {
+			return nil, err
+		}
+		allArgs = append(allArgs, "--pinentry-mode", "loopback", "--passphrase-file", passphrasePath)
+	}
+	allArgs = append(allArgs, args...)
+
+	cmd := exec.Command(c.execName(), allArgs...)
 	cmd.Stdin = bytes.NewReader(input)
 
 	var stdout bytes.Buffer
@@ -196,10 +246,9 @@ func (c Config) Encrypt(plaintext []byte, recipient string) ([]byte, error) {
 
 func (c Config) Decrypt(ciphertext []byte) ([]byte, error) {
 	args := c.baseArgs()
-	args = append(args, c.passphraseArgs()...)
 	args = append(args, "--decrypt")
 
-	return c.run(ciphertext, args...)
+	return c.runWithPassphrase(ciphertext, c.Passphrase, args...)
 }
 
 func (c Config) KeyExists(recipient string) (bool, error) {
@@ -262,6 +311,52 @@ func (c Config) Fingerprint(selector string) (string, error) {
 	return "", fmt.Errorf("could not determine GPG fingerprint for '%s'", selector)
 }
 
+func validateKeyFields(name, email, expireDate, keyType, keyLength string) error {
+	fields := []struct {
+		label string
+		value string
+	}{
+		{label: "name", value: name},
+		{label: "email", value: email},
+		{label: "expiry", value: expireDate},
+		{label: "key type", value: keyType},
+		{label: "key length", value: keyLength},
+	}
+	for _, field := range fields {
+		if strings.ContainsAny(field.value, "\r\n\x00") {
+			return fmt.Errorf("invalid %s: control characters are not allowed", field.label)
+		}
+	}
+	if !namePattern.MatchString(name) {
+		return fmt.Errorf("invalid key name")
+	}
+	if !emailPattern.MatchString(email) {
+		return fmt.Errorf("invalid key email")
+	}
+	if !expiryPattern.MatchString(expireDate) {
+		return fmt.Errorf("invalid key expiry")
+	}
+
+	normalizedType := strings.ToUpper(keyType)
+	switch normalizedType {
+	case "RSA", "DSA", "ECDSA", "ECDH", "EDDSA", "ECC", "ED25519":
+	default:
+		return fmt.Errorf("invalid key type")
+	}
+	length, err := strconv.Atoi(keyLength)
+	if err != nil {
+		return fmt.Errorf("invalid key length")
+	}
+	if normalizedType == "RSA" || normalizedType == "DSA" {
+		if length < 1024 || length > 16384 {
+			return fmt.Errorf("invalid key length")
+		}
+	} else if length < 256 || length > 521 {
+		return fmt.Errorf("invalid key length")
+	}
+	return nil
+}
+
 func (c Config) GenerateKey(req KeyRequest) (string, error) {
 	if err := c.checkExecutable(); err != nil {
 		return "", err
@@ -287,6 +382,10 @@ func (c Config) GenerateKey(req KeyRequest) (string, error) {
 	if keyLength == "" {
 		keyLength = "4096"
 	}
+	if err := validateKeyFields(name, email, expireDate, keyType, keyLength); err != nil {
+		return "", err
+	}
+	keyType = strings.ToUpper(keyType)
 
 	passphrase := req.Passphrase
 	if passphrase == "" {
@@ -304,18 +403,13 @@ func (c Config) GenerateKey(req KeyRequest) (string, error) {
 	fmt.Fprintf(&batch, "Expire-Date: %s\n", expireDate)
 	if passphrase == "" {
 		batch.WriteString("%no-protection\n")
-	} else {
-		fmt.Fprintf(&batch, "Passphrase: %s\n", passphrase)
 	}
 	batch.WriteString("%commit\n")
 
 	args := c.baseArgs()
-	if passphrase != "" {
-		args = append(args, "--pinentry-mode", "loopback", "--passphrase", passphrase)
-	}
 	args = append(args, "--generate-key")
 
-	if _, err := c.run([]byte(batch.String()), args...); err != nil {
+	if _, err := c.runWithPassphrase([]byte(batch.String()), passphrase, args...); err != nil {
 		return "", err
 	}
 

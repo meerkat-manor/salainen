@@ -7,6 +7,7 @@ import (
 
 	vault "github.com/hashicorp/vault/api"
 	"github.com/meerkat-manor/salainen"
+	"github.com/meerkat-manor/salainen/internal/netutil"
 )
 
 const (
@@ -56,6 +57,9 @@ func (sl *f) Init(custom interface{}) error {
 	if sl.address == "" {
 		return fmt.Errorf("configuration value for 'ApiUrl' missing")
 	}
+	if err := netutil.ValidateEndpoint(sl.address); err != nil {
+		return err
+	}
 
 	if sl.token == "" {
 		return fmt.Errorf("configuration value for 'AccessToken' missing")
@@ -81,17 +85,23 @@ func (sl *f) Init(custom interface{}) error {
 	sl.token = password
 	config := vault.DefaultConfig()
 	config.Address = sl.address
+	config.HttpClient = netutil.NewHTTPClient()
 
 	var err error
 	sl.client, err = vault.NewClient(config)
 	if err != nil {
 		return fmt.Errorf("unable to initialize Vault client: %v", err)
 	}
+	sl.client.SetToken(sl.token)
 
 	return nil
 }
 
 func (sl *f) Put(path, val string) error {
+	if sl.client == nil {
+		return fmt.Errorf("vault client is not initialized")
+	}
+
 	parts := strings.SplitN(path, "|", 2)
 	fpath := parts[0]
 
@@ -112,6 +122,10 @@ func (sl *f) Put(path, val string) error {
 }
 
 func (sl *f) Get(path string) (string, error) {
+	if sl.client == nil {
+		return "", fmt.Errorf("vault client is not initialized")
+	}
+
 	parts := strings.SplitN(path, "|", 2)
 	fpath := parts[0]
 
@@ -121,10 +135,13 @@ func (sl *f) Get(path string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unable to read secret: %v", err)
 	}
+	if secret == nil || secret.Data == nil {
+		return "", fmt.Errorf("vault returned no secret data for '%s'", fpath)
+	}
 
 	value, ok := secret.Data[sl.elementName].(string)
 	if !ok {
-		return "", fmt.Errorf("value type assertion failed: %v", secret.Data[sl.elementName])
+		return "", fmt.Errorf("secret '%s' does not contain a string value for '%s'", fpath, sl.elementName)
 	}
 
 	return value, nil

@@ -1,7 +1,9 @@
 package salainen
 
 import (
+	"fmt"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -94,6 +96,32 @@ func TestAddSecretStorageOverwritesRegistration(t *testing.T) {
 	if value != "second" {
 		t.Errorf("expected value from replacement storage, got %q", value)
 	}
+}
+
+func TestRegistryConcurrentAccess(t *testing.T) {
+	const workers = 8
+	var wg sync.WaitGroup
+
+	for i := 0; i < workers; i++ {
+		name := fmt.Sprintf("concurrentracer%d", i)
+		t.Cleanup(func() {
+			RemoveSecretStorage(name)
+		})
+
+		wg.Add(1)
+		go func(name string) {
+			defer wg.Done()
+			for j := 0; j < 50; j++ {
+				AddSecretStorage(name, &fakeStorage{getValue: name})
+				ListSecretStorage()
+				GetSecretStorage(name)
+				SearchSecretStorage(name + ":key")
+				RemoveSecretStorage(name)
+			}
+		}(name)
+	}
+
+	wg.Wait()
 }
 
 func TestPutAtMaximumValueLength(t *testing.T) {

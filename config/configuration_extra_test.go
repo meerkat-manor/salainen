@@ -290,21 +290,21 @@ func TestNewWithDefaults(t *testing.T) {
 	}
 }
 
-func TestDebugConfigurationWritesYAML(t *testing.T) {
+func TestDebugConfigurationDoesNotWriteYAML(t *testing.T) {
 
 	dir := t.TempDir()
 	path := writeTempFile(t, dir, "debug.json", `{"name": "debugapp", "version": "1.0.0"}`)
 
 	t.Setenv(ENV_SALAINEN_DEBUG, "TRUE")
 	t.Cleanup(func() {
-		debugState = false
+		debugState.Store(false)
 	})
 
 	if _, err := New(path, false); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if _, err := os.Stat(path + ".yaml"); err != nil {
-		t.Errorf("expected YAML copy to be written: %v", err)
+	if _, err := os.Stat(path + ".yaml"); err == nil {
+		t.Errorf("did not expect a YAML copy to be written")
 	}
 }

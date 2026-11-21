@@ -13,12 +13,20 @@ import (
 
 	"github.com/meerkat-manor/salainen"
 	"github.com/meerkat-manor/salainen/extensions/gpgutil"
+	"github.com/meerkat-manor/salainen/internal/pathlock"
+	"github.com/meerkat-manor/salainen/internal/securepath"
 	"github.com/xdg-go/pbkdf2"
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
+const (
+	pbkdf2Iterations = 210000
+	keyDerivation    = "PBKDF2-SHA256-210000"
+)
+
 type f struct {
 	RootPath      string
+	Passphrase    string
 	Algorithm     EncryptionAlgorithm
 	GPGExecutable string
 	GPGHomeDir    string
@@ -56,6 +64,11 @@ func (sl *f) Init(custom interface{}) error {
 			value, exists := settings["RootPath"]
 			if exists && value != "" {
 				sl.RootPath = value
+			}
+
+			value, exists = settings["Passphrase"]
+			if exists {
+				sl.Passphrase = value
 			}
 
 			value, exists = settings["Algorithm"]
@@ -133,39 +146,24 @@ func (sl *f) Init(custom interface{}) error {
 }
 
 func (sl *f) Put(path string, value string) error {
+	fpath, err := securepath.Resolve(sl.RootPath, path)
+	if err != nil {
+		return err
+	}
+
+	pathlock.Lock(fpath)
+	defer pathlock.Unlock(fpath)
+
+	if err := os.MkdirAll(filepath.Dir(fpath), 0o700); err != nil {
+		return fmt.Errorf("failed to create directory for encrypted file: %v", err)
+	}
+
+	encKey, err := sl.passphraseFor(path)
+	if err != nil {
+		return err
+	}
+
 	parts := strings.SplitN(path, "|", 2)
-	fpath := parts[0]
-
-	// Check for path traversal
-	if strings.Contains(fpath, "..") {
-		return fmt.Errorf("paths cannot contain '..' to prevent path traversal")
-	}
-
-	if sl.RootPath != "" {
-		fpath = filepath.Join(sl.RootPath, fpath)
-	}
-	if strings.HasPrefix(fpath, "~/") || strings.HasPrefix(fpath, "~\\") {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return err
-		}
-		fpath = filepath.Join(homeDir, fpath[2:])
-	}
-
-	parent := filepath.Dir(fpath)
-	if _, err := os.Stat(parent); err != nil {
-		err := os.MkdirAll(parent, 0o600)
-		if err != nil {
-			return fmt.Errorf("failed to create directory for encrypted file")
-		}
-	}
-
-	// The default encryption key (password) used
-	// is the path, if not supplied
-	encKey := path
-	if len(parts) == 2 {
-		encKey = parts[1]
-	}
 
 	switch sl.Algorithm {
 	case ChaCha20Poly1305:
@@ -184,35 +182,18 @@ func (sl *f) Put(path string, value string) error {
 }
 
 func (sl *f) Get(path string) (string, error) {
+	fpath, err := securepath.Resolve(sl.RootPath, path)
+	if err != nil {
+		return "", err
+	}
+
+	pathlock.RLock(fpath)
+	defer pathlock.RUnlock(fpath)
+
 	parts := strings.SplitN(path, "|", 2)
-	fpath := parts[0]
-
-	// Check for path traversal
-	if strings.Contains(fpath, "..") {
-		return "", fmt.Errorf("paths cannot contain '..' to prevent path traversal")
-	}
-
-	if sl.RootPath != "" {
-		fpath = filepath.Join(sl.RootPath, fpath)
-	}
-	if strings.HasPrefix(fpath, "~/") || strings.HasPrefix(fpath, "~\\") {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		fpath = filepath.Join(homeDir, fpath[2:])
-	}
-
-	parent := filepath.Dir(fpath)
-	if _, err := os.Stat(parent); err != nil {
-		return "", fmt.Errorf("directory '%s' does not exist", parent)
-	}
-
-	// The default encryption key (password) used
-	// is the path, if not supplied
-	encKey := path
-	if len(parts) == 2 {
-		encKey = parts[1]
+	encKey, err := sl.passphraseFor(path)
+	if err != nil {
+		return "", err
 	}
 
 	i, err := os.Open(fpath)
@@ -246,15 +227,32 @@ func (sl *f) Get(path string) (string, error) {
 
 }
 
+func (sl *f) passphraseFor(path string) (string, error) {
+	parts := strings.SplitN(path, "|", 2)
+	if len(parts) == 1 {
+		if sl.Passphrase != "" {
+			return sl.Passphrase, nil
+		}
+		return path, nil
+	}
+	if parts[1] == "" {
+		return "", fmt.Errorf("an explicit passphrase is required when a separator is supplied")
+	}
+	return parts[1], nil
+}
+
 func (sl *f) Encode_ChaCha20Poly1305(pass string, fpath string, value string) error {
 
+	salt := make([]byte, 16)
+	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
+		return err
+	}
 	nonce := make([]byte, chacha20poly1305.NonceSize)
-	_, err := io.ReadFull(rand.Reader, nonce)
-	if err != nil {
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return err
 	}
 
-	key := pbkdf2.Key([]byte(pass), nonce, 4096, chacha20poly1305.KeySize, sha256.New)
+	key := pbkdf2.Key([]byte(pass), salt, pbkdf2Iterations, chacha20poly1305.KeySize, sha256.New)
 
 	c, err := chacha20poly1305.New(key)
 	if err != nil {
@@ -263,18 +261,24 @@ func (sl *f) Encode_ChaCha20Poly1305(pass string, fpath string, value string) er
 
 	data := c.Seal(nil, nonce, []byte(value), nil)
 
-	oFile, err := os.OpenFile(fpath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	oFile, err := os.OpenFile(fpath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
 	if err != nil {
 		return err
 	}
 
 	defer oFile.Close()
+	if err := oFile.Chmod(0o600); err != nil {
+		return err
+	}
 
 	var b pem.Block
 	b.Bytes = data
 	b.Type = pemType
 	b.Headers = map[string]string{
-		"S-Nonce": base64.StdEncoding.EncodeToString(nonce),
+		"S-Salt":    base64.StdEncoding.EncodeToString(salt),
+		"S-Nonce":   base64.StdEncoding.EncodeToString(nonce),
+		"S-KDF":     keyDerivation,
+		"S-Version": "2",
 	}
 
 	return pem.Encode(oFile, &b)
@@ -296,8 +300,27 @@ func (sl *f) Decode_ChaCha20Poly1305(pass string, data []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if len(nonce) != chacha20poly1305.NonceSize {
+		return "", salainen.ErrInvalidSecret
+	}
 
-	key := pbkdf2.Key([]byte(pass), nonce, 4096, chacha20poly1305.KeySize, sha256.New)
+	salt := []byte(nonce)
+	iterations := 4096
+	if encodedSalt, exists := blk.Headers["S-Salt"]; exists {
+		salt, err = base64.StdEncoding.DecodeString(encodedSalt)
+		if err != nil {
+			return "", err
+		}
+		if len(salt) < 16 {
+			return "", salainen.ErrInvalidSecret
+		}
+		iterations = pbkdf2Iterations
+		if kdf := blk.Headers["S-KDF"]; kdf != "" && kdf != keyDerivation {
+			return "", fmt.Errorf("unsupported key derivation: %s", kdf)
+		}
+	}
+
+	key := pbkdf2.Key([]byte(pass), salt, iterations, chacha20poly1305.KeySize, sha256.New)
 
 	c, err := chacha20poly1305.New(key)
 	if err != nil {
@@ -320,11 +343,13 @@ func (sl *f) Encode_GPG(recipient string, fpath string, value string) error {
 	}
 
 	parent := filepath.Dir(fpath)
-	if _, err := os.Stat(parent); err != nil {
-		os.MkdirAll(parent, 0o600)
+	if err := os.MkdirAll(parent, 0o700); err != nil {
+		return err
 	}
-
-	return os.WriteFile(fpath, encrypted, 0o600)
+	if err := os.WriteFile(fpath, encrypted, 0o600); err != nil {
+		return err
+	}
+	return os.Chmod(fpath, 0o600)
 }
 
 func (sl *f) Decode_GPG(data []byte) (string, error) {
@@ -419,7 +444,7 @@ func (sl *f) Initialise() error {
 
 	if sl.Algorithm != GPG {
 		if sl.RootPath != "" {
-			return os.MkdirAll(sl.rootPath(), 0o600)
+			return os.MkdirAll(sl.rootPath(), 0o700)
 		}
 		return nil
 	}
@@ -434,19 +459,44 @@ func (sl *f) Initialise() error {
 
 	name := sl.GPGName
 	if name == "" {
-		name = gpgutil.Prompt("GPG key name", gpgutil.DefaultName(), false)
+		var err error
+		name, err = gpgutil.PromptResult("GPG key name", gpgutil.DefaultName(), false)
+		if err != nil {
+			return err
+		}
 	}
 	email := sl.GPGEmail
 	if email == "" {
-		email = gpgutil.Prompt("GPG key email", gpgutil.DefaultEmail(name), false)
+		var err error
+		email, err = gpgutil.PromptResult("GPG key email", gpgutil.DefaultEmail(name), false)
+		if err != nil {
+			return err
+		}
 	}
 	passphrase := sl.GPGPassphrase
 	if !sl.gpgPassphraseSet {
-		passphrase = gpgutil.Prompt("GPG key passphrase (blank for none)", "", true)
+		var err error
+		passphrase, err = gpgutil.PromptResult("GPG key passphrase (blank for none)", "", true)
+		if err != nil {
+			return err
+		}
+		if passphrase == "" {
+			confirmed, err := gpgutil.ConfirmUnprotectedKey()
+			if err != nil {
+				return err
+			}
+			if !confirmed {
+				return fmt.Errorf("an unprotected GPG key was not confirmed")
+			}
+		}
 	}
 	expireDate := sl.GPGExpireDate
 	if expireDate == "" {
-		expireDate = gpgutil.Prompt("GPG key expiry (0 = never)", "0", false)
+		var err error
+		expireDate, err = gpgutil.PromptResult("GPG key expiry (0 = never)", "0", false)
+		if err != nil {
+			return err
+		}
 	}
 
 	gpgConfig := sl.gpgConfig("")

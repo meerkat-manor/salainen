@@ -93,6 +93,59 @@ func TestEncFileCiphertextFormat(t *testing.T) {
 	}
 }
 
+func TestEncFileStrongKDFHeaders(t *testing.T) {
+	root := t.TempDir()
+	storage, err := New("", map[string]string{"RootPath": root})
+	if err != nil {
+		t.Fatalf("failed to create storage: %v", err)
+	}
+	if err := storage.Put("secret", "value"); err != nil {
+		t.Fatalf("unexpected put error: %v", err)
+	}
+
+	_, block := readEncryptedFile(t, root, "secret")
+	if block.Headers["S-Version"] != "2" {
+		t.Errorf("unexpected format version %q", block.Headers["S-Version"])
+	}
+	if block.Headers["S-KDF"] != keyDerivation {
+		t.Errorf("unexpected KDF %q", block.Headers["S-KDF"])
+	}
+	salt, err := base64.StdEncoding.DecodeString(block.Headers["S-Salt"])
+	if err != nil {
+		t.Fatalf("invalid S-Salt header: %v", err)
+	}
+	if len(salt) != 16 {
+		t.Errorf("expected a 16-byte salt, got %d bytes", len(salt))
+	}
+}
+
+func TestEncFileConfiguredPassphrase(t *testing.T) {
+	root := t.TempDir()
+	storage, err := New("", map[string]string{
+		"RootPath":   root,
+		"Passphrase": "configured-passphrase",
+	})
+	if err != nil {
+		t.Fatalf("failed to create storage: %v", err)
+	}
+
+	if err := storage.Put("secret", "value"); err != nil {
+		t.Fatalf("unexpected put error: %v", err)
+	}
+	value, err := storage.Get("secret")
+	if err != nil || value != "value" {
+		t.Errorf("configured passphrase round trip failed: %q %v", value, err)
+	}
+
+	if err := storage.Put("override|explicit-passphrase", "value"); err != nil {
+		t.Fatalf("unexpected override put error: %v", err)
+	}
+	value, err = storage.Get("override|explicit-passphrase")
+	if err != nil || value != "value" {
+		t.Errorf("explicit passphrase round trip failed: %q %v", value, err)
+	}
+}
+
 func TestEncFileDetectsTampering(t *testing.T) {
 
 	root := t.TempDir()

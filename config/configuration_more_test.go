@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -71,6 +72,21 @@ func TestCheckConfigurationFileSkipsDirectories(t *testing.T) {
 	}
 }
 
+func TestCheckConfigurationFileSkipsWorldWritable(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX permission bits are not meaningful on Windows")
+	}
+
+	dir := t.TempDir()
+	path := writeTempFile(t, dir, "salainen.json", `{"name":"insecure"}`)
+	if err := os.Chmod(path, 0o666); err != nil {
+		t.Fatalf("failed to loosen file permissions: %v", err)
+	}
+	if got := checkConfigurationFile(dir); got == path {
+		t.Errorf("world-writable configuration file was accepted")
+	}
+}
+
 func TestDebugFlagValues(t *testing.T) {
 
 	tests := []struct {
@@ -90,7 +106,7 @@ func TestDebugFlagValues(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Setenv(ENV_SALAINEN_DEBUG, test.value)
 			t.Cleanup(func() {
-				debugState = false
+				debugState.Store(false)
 			})
 
 			dir := t.TempDir()
@@ -99,17 +115,14 @@ func TestDebugFlagValues(t *testing.T) {
 			if _, err := New(path, false); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if debugState != test.wantDebug {
-				t.Errorf("expected debugState %v, got %v", test.wantDebug, debugState)
+			if got := debugState.Load(); got != test.wantDebug {
+				t.Errorf("expected debugState %v, got %v", test.wantDebug, got)
 			}
 
-			_, err := os.Stat(path + ".yaml")
-			if test.wantDebug && err != nil {
-				t.Errorf("expected YAML copy to be written: %v", err)
+			if _, err := os.Stat(path + ".yaml"); err == nil {
+				t.Errorf("did not expect a YAML copy to be written")
 			}
-			if !test.wantDebug && err == nil {
-				t.Errorf("did not expect a YAML copy with debug disabled")
-			}
+
 		})
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/meerkat-manor/salainen"
@@ -110,6 +111,49 @@ func TestFileProductNameSubstitution(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(root, salainen.ProductName, "key")); err != nil {
 		t.Errorf("expected substituted directory to be used: %v", err)
+	}
+}
+
+func TestFileRejectsPathTraversal(t *testing.T) {
+	storage := newTempStorage(t, nil)
+
+	for _, key := range []string{"../outside", "folder/../../outside", "/absolute"} {
+		if err := storage.Put(key, "value"); err == nil {
+			t.Errorf("expected put error for %q", key)
+		}
+		if _, err := storage.Get(key); err == nil {
+			t.Errorf("expected get error for %q", key)
+		}
+	}
+}
+
+func TestFileUsesRestrictiveModes(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX permission bits are not meaningful on Windows")
+	}
+	root := t.TempDir()
+	storage, err := New("", map[string]string{"RootPath": root})
+	if err != nil {
+		t.Fatalf("failed to create storage: %v", err)
+	}
+	if err := storage.Put("folder/secret", "value"); err != nil {
+		t.Fatalf("unexpected put error: %v", err)
+	}
+
+	dirInfo, err := os.Stat(filepath.Join(root, "folder"))
+	if err != nil {
+		t.Fatalf("failed to stat directory: %v", err)
+	}
+	if dirInfo.Mode().Perm()&0o077 != 0 {
+		t.Errorf("directory has permissive mode %v", dirInfo.Mode().Perm())
+	}
+
+	fileInfo, err := os.Stat(filepath.Join(root, "folder", "secret"))
+	if err != nil {
+		t.Fatalf("failed to stat secret file: %v", err)
+	}
+	if fileInfo.Mode().Perm()&0o077 != 0 {
+		t.Errorf("secret file has permissive mode %v", fileInfo.Mode().Perm())
 	}
 }
 

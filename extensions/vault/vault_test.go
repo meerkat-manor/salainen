@@ -44,6 +44,17 @@ func TestSimpleVaultCreate(t *testing.T) {
 
 }
 
+func TestVaultRejectsInsecureRemoteEndpoint(t *testing.T) {
+	testInit()
+	custom := map[string]string{
+		"ApiUrl":      "http://vault.example.com",
+		"AccessToken": "plain:salainen-root",
+	}
+	if _, err := New("", custom); err == nil {
+		t.Errorf("expected insecure remote endpoint to be rejected")
+	}
+}
+
 func TestSimpleVaultPutGet(t *testing.T) {
 
 	addr := requireVault(t)

@@ -408,7 +408,7 @@ func TestVaultRegister(t *testing.T) {
 		t.Fatalf("unexpected registration error: %v", err)
 	}
 	t.Cleanup(func() {
-		delete(salainen.SecretStorages, "vault")
+		salainen.RemoveSecretStorage("vault")
 	})
 
 	storage, err := salainen.GetSecretStorage("vault")
