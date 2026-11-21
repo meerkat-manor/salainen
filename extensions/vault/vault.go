@@ -27,7 +27,10 @@ type f struct {
 func (sl *f) Init(custom interface{}) error {
 
 	if custom != nil {
-		settings := custom.(map[string]string)
+		settings, ok := custom.(map[string]string)
+		if !ok {
+			return fmt.Errorf("error with custom configuration which is missing or invalid format")
+		}
 
 		value, exists := settings["ApiUrl"]
 		if exists && value != "" {

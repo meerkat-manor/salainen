@@ -79,7 +79,7 @@ func ReadMarker(path string) (*Marker, error) {
 func WriteMarker(path string, marker Marker) error {
 	parent := filepath.Dir(path)
 	if _, err := os.Stat(parent); err != nil {
-		if err := os.MkdirAll(parent, 0700); err != nil {
+		if err := os.MkdirAll(parent, 0o600); err != nil {
 			return err
 		}
 	}
@@ -89,7 +89,7 @@ func WriteMarker(path string, marker Marker) error {
 		return err
 	}
 
-	return os.WriteFile(path, data, 0600)
+	return os.WriteFile(path, data, 0o600)
 }
 
 func Prompt(label string, defaultValue string, secret bool) string {
@@ -153,7 +153,7 @@ func (c Config) checkExecutable() error {
 		return fmt.Errorf("GPG executable '%s' not found. Please install GPG and ensure it is on the PATH", c.execName())
 	}
 	if c.HomeDir != "" {
-		if err := os.MkdirAll(ExpandPath(c.HomeDir), 0700); err != nil {
+		if err := os.MkdirAll(ExpandPath(c.HomeDir), 0o600); err != nil {
 			return fmt.Errorf("could not create GPG home directory '%s'. Error: %v", c.HomeDir, err)
 		}
 	}

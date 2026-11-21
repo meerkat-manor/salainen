@@ -9,7 +9,7 @@ const (
 	ProviderSeparator string = ":"
 	SaneDefaults      bool   = true
 	ProductName       string = "salainen"
-	ProductVersion    string = "v0.0.9"
+	ProductVersion    string = "v0.0.10"
 	SourceForgeURL    string = "https://github.com/meerkat-manor/salainen/tree/main"
 
 	MaxProviderLength int = 30
@@ -49,6 +49,10 @@ func Get(key string) (string, error) {
 	storage, keypath, err := SearchSecretStorage(key)
 	if err != nil {
 		return "", err
+	}
+
+	if keypath == "" {
+		return "", fmt.Errorf("missing secret key path for provider %s", key)
 	}
 
 	return storage.Get(keypath)

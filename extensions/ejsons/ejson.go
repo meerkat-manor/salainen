@@ -273,17 +273,23 @@ func (sl *f) Put(path string, val string) error {
 		contents = outBuffer.Bytes()
 	}
 
-	fileMode := os.FileMode(0600)
+	fileMode := os.FileMode(0o600)
 	if stat, err := os.Stat(fpath); err == nil {
 		fileMode = stat.Mode()
+	}
+	if fileMode != 0o600 {
+		return fmt.Errorf("the file is not secure with mode '%v', please change to 600", fileMode)
 	}
 
 	parent := filepath.Dir(fpath)
 	if _, err := os.Stat(parent); err != nil {
-		os.MkdirAll(parent, 0700)
+		err := os.MkdirAll(parent, fileMode)
+		if err != nil {
+			return fmt.Errorf("failed to create directory for ejson file")
+		}
 	}
 
-	if err := os.WriteFile(fpath, contents, fileMode); err != nil {
+	if err := os.WriteFile(fpath, contents, 0o600); err != nil {
 		return fmt.Errorf("could not write encrypt JSON file. Error: %v", err)
 	}
 
@@ -326,7 +332,7 @@ func (sl *f) Get(path string) (string, error) {
 		if os.IsNotExist(err) {
 			return "", salainen.ErrNoSuchSecret
 		}
-		return "", err
+		return "", fmt.Errorf("error with %s provider: %v", providerName, err)
 	}
 
 	// Decrypt file
@@ -446,7 +452,7 @@ func (sl *f) Initialise() error {
 
 	if sl.Algorithm != GPG {
 		if sl.RootPath != "" {
-			return os.MkdirAll(sl.rootPath(), 0700)
+			return os.MkdirAll(sl.rootPath(), 0o600)
 		}
 		return nil
 	}

@@ -33,19 +33,16 @@ const (
 )
 
 type StorageConfiguration struct {
-	Enabled      bool         `yaml:"enabled" json:"enabled"`
-	ProviderType ProviderType `yaml:"provider_type" json:"provider_type"`
-	Name         string       `yaml:"name" json:"name"`
-	Config       string       `yaml:"config" json:"config"`
-
-	//	Custom interface{} `yaml:"custom" json:"custom"`
-	Custom map[string]string `yaml:"custom" json:"custom"`
+	Enabled      bool              `yaml:"enabled" json:"enabled"`
+	ProviderType ProviderType      `yaml:"provider_type" json:"provider_type"`
+	Name         string            `yaml:"name" json:"name"`
+	Config       string            `yaml:"config" json:"config"`
+	Custom       map[string]string `yaml:"custom" json:"custom"`
 }
 
 type ApplicationConfiguration struct {
-	Name    string `yaml:"name" json:"name"`
-	Version string `yaml:"version" json:"version"`
-
+	Name    string                          `yaml:"name" json:"name"`
+	Version string                          `yaml:"version" json:"version"`
 	Storage map[string]StorageConfiguration `yaml:"providers" json:"providers"`
 }
 
@@ -372,7 +369,7 @@ func loadConfig(configFile string) (*ApplicationConfiguration, error) {
 			content, errY := yaml.Marshal(appConfig)
 			if errY == nil {
 				oFileName := configFile + ".yaml"
-				os.WriteFile(oFileName, content, os.ModeAppend)
+				os.WriteFile(oFileName, content, 0o600)
 			}
 		}
 

@@ -55,7 +55,7 @@ func (sl *f) Get(path string) (string, error) {
 
 	cred, err := wincred.GetGenericCredential(path)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error with %s provider: %v", providerName, err)
 	}
 
 	return string(cred.CredentialBlob), nil

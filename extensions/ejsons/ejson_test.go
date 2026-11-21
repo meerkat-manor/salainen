@@ -170,7 +170,7 @@ func TestCheckEjsonGeneration(t *testing.T) {
 	// Change pub key
 	data := strings.Replace(string(input), "PUBKEY_CHANGE", pub, 1)
 
-	err = os.WriteFile(fpath, []byte(data), 0644)
+	err = os.WriteFile(fpath, []byte(data), 0o600)
 	if err != nil {
 		t.Error(err)
 	}

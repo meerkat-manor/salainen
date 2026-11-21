@@ -46,86 +46,68 @@ func TestSimpleVaultCreate(t *testing.T) {
 
 func TestSimpleVaultPutGet(t *testing.T) {
 
+	addr := requireVault(t)
 	testInit()
 	custom := map[string]string{
-		"ApiUrl":      "http://127.0.0.1:8200",
+		"ApiUrl":      addr,
 		"AccessToken": "plain:salainen-root",
 		"Vault":       "secret",
 	}
 
 	sto, err := New("", custom)
 	if err != nil {
-		t.Errorf("failed to create VAULT storage. error: %v", err)
-	} else {
-		if sto == nil {
-			t.Errorf("no VAULT storage created")
-		} else {
-
-			value, err := sto.Get("missingkey")
-			if err == nil {
-				t.Errorf("failed to flag error")
-			} else {
-				t.Logf("success with empty: '%s' and %v", value, err)
-			}
-
-			key := "my-secret-password/extra"
-			secret := "mysecret01"
-			err = sto.Put(key, secret)
-			if err != nil {
-				t.Errorf("failed to put value. error: %v", err)
-			} else {
-				value, err := sto.Get(key)
-				if err != nil || value != secret {
-					t.Errorf("failed to get value. error: %v", err)
-				} else {
-					t.Logf("success : %s", value)
-				}
-			}
-
-		}
+		t.Fatalf("failed to create VAULT storage. error: %v", err)
+	}
+	if sto == nil {
+		t.Fatalf("no VAULT storage created")
 	}
 
+	key := "my-secret-password/extra"
+	secret := "mysecret01"
+	if err := sto.Put(key, secret); err != nil {
+		t.Fatalf("failed to put value. error: %v", err)
+	}
+
+	value, err := sto.Get(key)
+	if err != nil || value != secret {
+		t.Errorf("failed to get value: '%s' %v", value, err)
+	}
+
+	if value, err := sto.Get("missingkey"); err == nil {
+		t.Errorf("failed to flag error for missing key, got value '%s'", value)
+	}
 }
 
 func TestKV01VaultPutGet(t *testing.T) {
 
+	addr := requireVault(t)
 	testInit()
 	custom := map[string]string{
-		"ApiUrl":      "http://127.0.0.1:8200",
+		"ApiUrl":      addr,
 		"AccessToken": "plain:salainen-root",
 		"Vault":       "salainen",
 	}
 
 	sto, err := New("", custom)
 	if err != nil {
-		t.Errorf("failed to create VAULT storage. error: %v", err)
-	} else {
-		if sto == nil {
-			t.Errorf("no VAULT storage created")
-		} else {
-
-			value, err := sto.Get("missingkey")
-			if err == nil {
-				t.Errorf("failed to flag error")
-			} else {
-				t.Logf("success with empty: '%s' and %v", value, err)
-			}
-
-			key := "my-kv2-password/extra"
-			secret := "mysecret01-99"
-			err = sto.Put(key, secret)
-			if err != nil {
-				t.Errorf("failed to put value. error: %v", err)
-			} else {
-				value, err := sto.Get(key)
-				if err != nil || value != secret {
-					t.Errorf("failed to get value. error: %v", err)
-				} else {
-					t.Logf("success : %s", value)
-				}
-			}
-
-		}
+		t.Fatalf("failed to create VAULT storage. error: %v", err)
+	}
+	if sto == nil {
+		t.Fatalf("no VAULT storage created")
 	}
 
+	key := "my-kv2-password/extra"
+	secret := "mysecret01-99"
+	if err := sto.Put(key, secret); err != nil {
+		t.Fatalf("failed to put value. error: %v", err)
+	}
+
+	value, err := sto.Get(key)
+	if err != nil || value != secret {
+		t.Errorf("failed to get value: '%s' %v", value, err)
+	}
+
+	if value, err := sto.Get("missingkey"); err == nil {
+		t.Errorf("failed to flag error for missing key, got value '%s'", value)
+	}
 }

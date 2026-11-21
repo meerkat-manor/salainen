@@ -7,8 +7,10 @@ import (
 
 func TestSimpleFileCreate(t *testing.T) {
 
+	testTmpDir := t.TempDir()
+
 	custom := map[string]string{
-		"RootPath": fmt.Sprintf("~/.secrets/test_%s", "salainen"),
+		"RootPath": fmt.Sprintf("%s/test_%s", testTmpDir, "salainen"),
 	}
 
 	sto, err := New("", custom)
@@ -26,8 +28,10 @@ func TestSimpleFileCreate(t *testing.T) {
 
 func TestSimpleFilePutGet(t *testing.T) {
 
+	testTmpDir := t.TempDir()
+
 	custom := map[string]string{
-		"RootPath": fmt.Sprintf("~/.secrets/test_%s", "salainen"),
+		"RootPath": fmt.Sprintf("%s/test_%s", testTmpDir, "salainen"),
 	}
 
 	sto, err := New("", custom)

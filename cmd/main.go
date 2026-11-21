@@ -132,6 +132,8 @@ func process_default(clip bool, genSecret bool, overwrite bool, args []string) e
 	var genCredential string
 
 	if genSecret {
+		// TODO generate secret parameters using config values
+
 		genCredential, err = generate.AuthenticationSecret(nil)
 		if err != nil {
 			return err

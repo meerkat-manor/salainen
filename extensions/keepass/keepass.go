@@ -275,7 +275,7 @@ func (sl *f) Get(path string) (string, error) {
 
 	gidx, eidx, value, err := sl.get(kgroup, kpath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error with %s provider: %v", providerName, err)
 	}
 	if gidx < 0 || eidx < 0 {
 		return "", fmt.Errorf("no matching key path was found")

@@ -36,6 +36,11 @@ func (sl *f) Put(path string, val string) error {
 	parts := strings.SplitN(path, "|", 2)
 	fpath := parts[0]
 
+	// Check for path traversal
+	if strings.Contains(fpath, "..") {
+		return fmt.Errorf("paths cannot contain '..' to prevent path traversal")
+	}
+
 	if sl.RootPath != "" {
 		fpath = filepath.Join(sl.RootPath, fpath)
 	}
@@ -49,10 +54,13 @@ func (sl *f) Put(path string, val string) error {
 
 	parent := filepath.Dir(fpath)
 	if _, err := os.Stat(parent); err != nil {
-		os.MkdirAll(parent, os.ModeDir)
+		err := os.MkdirAll(parent, 0o600)
+		if err != nil {
+			return fmt.Errorf("failed to create directory for secret file")
+		}
 	}
 
-	err := os.WriteFile(fpath, []byte(val), os.ModePerm)
+	err := os.WriteFile(fpath, []byte(val), 0o600)
 	if err != nil {
 		return err
 	}
@@ -63,6 +71,11 @@ func (sl *f) Put(path string, val string) error {
 func (sl *f) Get(path string) (string, error) {
 	parts := strings.SplitN(path, "|", 2)
 	fpath := parts[0]
+
+	// Check for path traversal
+	if strings.Contains(fpath, "..") {
+		return "", fmt.Errorf("paths cannot contain '..' to prevent path traversal")
+	}
 
 	if sl.RootPath != "" {
 		fpath = filepath.Join(sl.RootPath, fpath)
@@ -85,7 +98,7 @@ func (sl *f) Get(path string) (string, error) {
 		if os.IsNotExist(err) {
 			return "", salainen.ErrNoSuchSecret
 		}
-		return "", err
+		return "", fmt.Errorf("error with %s provider: %v", providerName, err)
 	}
 
 	// Strip last character EOL/EOF
@@ -104,7 +117,7 @@ func (sl *f) Help() {
 	fmt.Printf("\n")
 	fmt.Printf("The special value of '~' is recognised as your home directory.\n")
 	fmt.Printf("You can store secrets in your home directory by specifying a\n")
-	fmt.Printf("configured 'RootPath' such as '~/.secrets/%s'\n", "salainen") // TODO improve
+	fmt.Printf("configured 'RootPath' such as '~/.secrets/%s'\n", "salainen")
 	fmt.Printf("\n")
 	fmt.Printf("For more information please see %s/extensions/file/ \n", salainen.SourceForgeURL)
 }

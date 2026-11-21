@@ -1,12 +1,10 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
-
-	"github.com/meerkat-manor/salainen"
 )
 
 func writeTempFile(t *testing.T, dir string, name string, content string) string {
@@ -149,7 +147,7 @@ func TestCheckConfigurationFile(t *testing.T) {
 		t.Errorf("expected no configuration file, got %q", got)
 	}
 
-	for _, name := range []string{"salainen.json", "salainen.yaml", "salainen.yml"} {
+	for _, name := range []string{fmt.Sprintf("%s.json", ProductName), fmt.Sprintf("%s.yaml", ProductName), fmt.Sprintf("%s.yml", ProductName)} {
 		dir := t.TempDir()
 		path := writeTempFile(t, dir, name, "")
 		if got := checkConfigurationFile(dir); got != path {
@@ -174,11 +172,11 @@ func TestNewWithMissingOrInvalidConfigFile(t *testing.T) {
 func TestNewWithHomeRelativePath(t *testing.T) {
 
 	dir := t.TempDir()
-	writeTempFile(t, dir, "salainen.json", `{"name": "homeapp", "version": "1.0.0"}`)
+	writeTempFile(t, dir, fmt.Sprintf("%s.json", ProductName), `{"name": "homeapp", "version": "1.0.0"}`)
 
 	t.Setenv("USERPROFILE", dir)
 	t.Setenv("HOME", dir)
-	t.Setenv(strings.ToUpper(os.Getenv(strings.ToUpper(salainen.ProductName)+"_DEBUG")), "")
+	t.Setenv(ENV_SALAINEN_DEBUG, "")
 
 	app, err := New("~/salainen.json", false)
 	if err != nil {
@@ -297,7 +295,7 @@ func TestDebugConfigurationWritesYAML(t *testing.T) {
 	dir := t.TempDir()
 	path := writeTempFile(t, dir, "debug.json", `{"name": "debugapp", "version": "1.0.0"}`)
 
-	t.Setenv(strings.ToUpper(os.Getenv(strings.ToUpper(salainen.ProductName)+"_DEBUG")), "TRUE")
+	t.Setenv(ENV_SALAINEN_DEBUG, "TRUE")
 	t.Cleanup(func() {
 		debugState = false
 	})

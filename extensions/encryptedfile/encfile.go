@@ -136,6 +136,11 @@ func (sl *f) Put(path string, value string) error {
 	parts := strings.SplitN(path, "|", 2)
 	fpath := parts[0]
 
+	// Check for path traversal
+	if strings.Contains(fpath, "..") {
+		return fmt.Errorf("paths cannot contain '..' to prevent path traversal")
+	}
+
 	if sl.RootPath != "" {
 		fpath = filepath.Join(sl.RootPath, fpath)
 	}
@@ -149,7 +154,10 @@ func (sl *f) Put(path string, value string) error {
 
 	parent := filepath.Dir(fpath)
 	if _, err := os.Stat(parent); err != nil {
-		os.MkdirAll(parent, os.ModeDir)
+		err := os.MkdirAll(parent, 0o600)
+		if err != nil {
+			return fmt.Errorf("failed to create directory for encrypted file")
+		}
 	}
 
 	// The default encryption key (password) used
@@ -178,6 +186,11 @@ func (sl *f) Put(path string, value string) error {
 func (sl *f) Get(path string) (string, error) {
 	parts := strings.SplitN(path, "|", 2)
 	fpath := parts[0]
+
+	// Check for path traversal
+	if strings.Contains(fpath, "..") {
+		return "", fmt.Errorf("paths cannot contain '..' to prevent path traversal")
+	}
 
 	if sl.RootPath != "" {
 		fpath = filepath.Join(sl.RootPath, fpath)
@@ -213,7 +226,7 @@ func (sl *f) Get(path string) (string, error) {
 
 	data, err := io.ReadAll(i)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error with %s provider: %v", providerName, err)
 	}
 
 	switch sl.Algorithm {
@@ -308,10 +321,10 @@ func (sl *f) Encode_GPG(recipient string, fpath string, value string) error {
 
 	parent := filepath.Dir(fpath)
 	if _, err := os.Stat(parent); err != nil {
-		os.MkdirAll(parent, 0700)
+		os.MkdirAll(parent, 0o600)
 	}
 
-	return os.WriteFile(fpath, encrypted, 0600)
+	return os.WriteFile(fpath, encrypted, 0o600)
 }
 
 func (sl *f) Decode_GPG(data []byte) (string, error) {
@@ -406,7 +419,7 @@ func (sl *f) Initialise() error {
 
 	if sl.Algorithm != GPG {
 		if sl.RootPath != "" {
-			return os.MkdirAll(sl.rootPath(), 0700)
+			return os.MkdirAll(sl.rootPath(), 0o600)
 		}
 		return nil
 	}
