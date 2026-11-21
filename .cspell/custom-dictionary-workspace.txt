@@ -2,8 +2,14 @@
 Bitwarden
 ejson
 ejsons
+GnuPG
+gnupg
+GPG
+Gpg4win
 kdbx
 keepass
+keyid
 Merebox
+OpenPGP
 salainen
 Vaultwarden

@@ -2,6 +2,8 @@ package plain
 
 import (
 	"testing"
+
+	"github.com/meerkat-manor/salainen"
 )
 
 func TestSimplePlainCreate(t *testing.T) {
@@ -48,4 +50,23 @@ func TestSimplePlainPutGet(t *testing.T) {
 		}
 	}
 
+}
+
+func TestPlainRegisterAndHelp(t *testing.T) {
+
+	if err := Register("", nil); err != nil {
+		t.Fatalf("failed to register PLAIN storage: %v", err)
+	}
+
+	sto, err := salainen.GetSecretStorage("plain")
+	if err != nil {
+		t.Fatalf("registered PLAIN storage not found: %v", err)
+	}
+
+	sto.Help()
+
+	value, err := sto.Get("plain-value")
+	if err != nil || value != "plain-value" {
+		t.Errorf("unexpected get result: %q %v", value, err)
+	}
 }

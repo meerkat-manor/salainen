@@ -44,7 +44,7 @@ func (sl *f) Get(path string) (string, error) {
 
 	value, err := keyring.Get(sl.Service, fpath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error with %s provider: %v", providerName, err)
 	}
 	if value == "" {
 		return "", fmt.Errorf("failed to find value")

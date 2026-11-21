@@ -1,10 +1,10 @@
 package generate
 
 import (
+	crypto_rand "crypto/rand"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"strings"
-	"time"
 )
 
 type GenerateParameters struct {
@@ -13,6 +13,7 @@ type GenerateParameters struct {
 	ContentSet    string
 }
 
+const numberchar = "0123456789"
 const lowerchar = "abcdefghijklmnopqrstuvwxyz"
 const upperchar = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const mixedchar = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -49,56 +50,99 @@ func AuthenticationSecret(parameters *GenerateParameters) (string, error) {
 	return GenerateCredential(genParms.ContentSet, genParms.MaximumLength)
 }
 
+func random64(max int) (int64, error) {
+	if max <= 0 {
+		return 0, fmt.Errorf("can't define input as <=0")
+	}
+	nbig, err := crypto_rand.Int(crypto_rand.Reader, big.NewInt(int64(max)))
+	if err != nil {
+		return 0, err
+	}
+	return nbig.Int64(), nil
+}
+
 func GenerateCredential(credentialType string, codeLength int) (string, error) {
 
-	seed := time.Now().UnixNano()
-	rand.New(rand.NewSource(seed))
+	if codeLength < 1 || codeLength > 50 {
+		return "", fmt.Errorf("generate length is invalid.  The value needs to be between 1 ands 50 inclusive")
+	}
 
 	switch strings.ToUpper(credentialType) {
 	case "DIGIT":
-		iCode := rand.Int63() // Generates a random int64 number
-		code := fmt.Sprintf("%d", iCode)
-		return code[:codeLength], nil
+		sb := strings.Builder{}
+		sb.Grow(codeLength)
+		for i := 0; i < codeLength; i++ {
+			ix, err := random64(len(numberchar))
+			if err != nil {
+				return "", err
+			}
+			sb.WriteByte(numberchar[ix])
+		}
+		return sb.String(), nil
 	case "ALPHAUPPER":
 		sb := strings.Builder{}
 		sb.Grow(codeLength)
 		for i := 0; i < codeLength; i++ {
-			sb.WriteByte(upperchar[rand.Intn(len(upperchar))])
+			ix, err := random64(len(upperchar))
+			if err != nil {
+				return "", err
+			}
+			sb.WriteByte(upperchar[ix])
 		}
 		return sb.String(), nil
 	case "ALPHALOWER":
 		sb := strings.Builder{}
 		sb.Grow(codeLength)
 		for i := 0; i < codeLength; i++ {
-			sb.WriteByte(lowerchar[rand.Intn(len(lowerchar))])
+			ix, err := random64(len(lowerchar))
+			if err != nil {
+				return "", err
+			}
+			sb.WriteByte(lowerchar[ix])
 		}
 		return sb.String(), nil
 	case "ALPHANUMERIC":
 		sb := strings.Builder{}
 		sb.Grow(codeLength)
 		for i := 0; i < codeLength; i++ {
-			sb.WriteByte(alphanumeric[rand.Intn(len(alphanumeric))])
+			ix, err := random64(len(alphanumeric))
+			if err != nil {
+				return "", err
+			}
+			sb.WriteByte(alphanumeric[ix])
 		}
 		return sb.String(), nil
 	case "ALPHANUMERICMIXED":
 		sb := strings.Builder{}
 		sb.Grow(codeLength)
 		for i := 0; i < codeLength; i++ {
-			sb.WriteByte(alphanumeric_mixed[rand.Intn(len(alphanumeric_mixed))])
+			ix, err := random64(len(alphanumeric_mixed))
+			if err != nil {
+				return "", err
+			}
+			sb.WriteByte(alphanumeric_mixed[ix])
 		}
 		return sb.String(), nil
 	case "ALPHASYMBOLS":
 		sb := strings.Builder{}
 		sb.Grow(codeLength)
 		for i := 0; i < codeLength; i++ {
-			sb.WriteByte(alphasymbols[rand.Intn(len(alphasymbols))])
+			ix, err := random64(len(alphasymbols))
+			if err != nil {
+				return "", err
+			}
+			sb.WriteByte(alphasymbols[ix])
 		}
 		return sb.String(), nil
 	case "ALPHASYMBOLSMIXED":
 		sb := strings.Builder{}
 		sb.Grow(codeLength)
 		for i := 0; i < codeLength; i++ {
-			sb.WriteByte(alphasymbols_mixed[rand.Intn(len(alphasymbols_mixed))])
+			ix, err := random64(len(alphasymbols_mixed))
+			if err != nil {
+				return "", err
+			}
+			sb.WriteByte(alphasymbols_mixed[ix])
 		}
 		return sb.String(), nil
 	case "MIXEDALPHA":
@@ -107,7 +151,11 @@ func GenerateCredential(credentialType string, codeLength int) (string, error) {
 		sb := strings.Builder{}
 		sb.Grow(codeLength)
 		for i := 0; i < codeLength; i++ {
-			sb.WriteByte(mixedchar[rand.Intn(len(mixedchar))])
+			ix, err := random64(len(mixedchar))
+			if err != nil {
+				return "", err
+			}
+			sb.WriteByte(mixedchar[ix])
 		}
 		return sb.String(), nil
 	default:

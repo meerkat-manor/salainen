@@ -3,13 +3,14 @@ package salainen
 import (
 	"fmt"
 	"strings"
+	"sync"
 )
 
 const (
 	ProviderSeparator string = ":"
 	SaneDefaults      bool   = true
 	ProductName       string = "salainen"
-	ProductVersion    string = "v0.0.8"
+	ProductVersion    string = "v0.0.10"
 	SourceForgeURL    string = "https://github.com/meerkat-manor/salainen/tree/main"
 
 	MaxProviderLength int = 30
@@ -33,7 +34,15 @@ type SecretStorage interface {
 	Put(path string, value string) error
 }
 
-var SecretStorages = map[string]SecretStorage{}
+type SecretStorageInitializer interface {
+	Initialised() (bool, error)
+	Initialise() error
+}
+
+var (
+	SecretStorages = map[string]SecretStorage{}
+	registryMu     sync.RWMutex
+)
 
 func Get(key string) (string, error) {
 
@@ -44,6 +53,10 @@ func Get(key string) (string, error) {
 	storage, keypath, err := SearchSecretStorage(key)
 	if err != nil {
 		return "", err
+	}
+
+	if keypath == "" {
+		return "", fmt.Errorf("missing secret key path for provider %s", key)
 	}
 
 	return storage.Get(keypath)
@@ -72,16 +85,33 @@ func Put(key string, value string) error {
 }
 
 func AddSecretStorage(name string, secretStorage SecretStorage) {
+	registryMu.Lock()
+	defer registryMu.Unlock()
 	SecretStorages[name] = secretStorage
 }
 
+func RemoveSecretStorage(name string) {
+	registryMu.Lock()
+	defer registryMu.Unlock()
+	delete(SecretStorages, name)
+}
+
 func ListSecretStorage() map[string]SecretStorage {
-	return SecretStorages
+	registryMu.RLock()
+	defer registryMu.RUnlock()
+
+	storages := make(map[string]SecretStorage, len(SecretStorages))
+	for name, storage := range SecretStorages {
+		storages[name] = storage
+	}
+	return storages
 }
 
 func GetSecretStorage(id string) (SecretStorage, error) {
 
+	registryMu.RLock()
 	storage, exists := SecretStorages[id]
+	registryMu.RUnlock()
 	if !exists {
 		return nil, ErrInvalidProvider
 	}
@@ -120,7 +150,9 @@ func SearchSecretStorage(id string) (SecretStorage, string, error) {
 		return nil, "", ErrInvalidProvider
 	}
 
+	registryMu.RLock()
 	storage, exists := SecretStorages[id[:idx]]
+	registryMu.RUnlock()
 	if !exists {
 		return nil, "", ErrInvalidProvider
 	}

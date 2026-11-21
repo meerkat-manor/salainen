@@ -3,6 +3,8 @@ package keepass
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/meerkat-manor/salainen/extensions/plain"
@@ -258,6 +260,51 @@ func TestGroupEmptyKPPutGet(t *testing.T) {
 		}
 	}
 
+}
+
+func TestKeepassPasswordIsProtectedAndFileIsPrivate(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX permission bits are not meaningful on Windows")
+	}
+	testInit()
+	keepassFile := filepath.Join(t.TempDir(), "secrets.kdbx")
+	storage, err := New("", map[string]string{
+		"Path":           keepassFile,
+		"MasterPassword": "plain:tester03",
+	})
+	if err != nil {
+		t.Fatalf("failed to create keepass storage: %v", err)
+	}
+	provider, ok := storage.(*f)
+	if !ok {
+		t.Fatalf("unexpected storage type")
+	}
+
+	if err := storage.Put("protected-key", "secret-value"); err != nil {
+		t.Fatalf("unexpected put error: %v", err)
+	}
+
+	found := false
+	for _, group := range provider.db.Content.Root.Groups[0].Groups {
+		for _, entry := range group.Entries {
+			for _, item := range entry.Values {
+				if item.Key == "Password" && item.Value.Protected.Bool {
+					found = true
+				}
+			}
+		}
+	}
+	if !found {
+		t.Errorf("password value is not marked protected")
+	}
+
+	info, err := os.Stat(keepassFile)
+	if err != nil {
+		t.Fatalf("failed to stat keepass file: %v", err)
+	}
+	if info.Mode().Perm()&0o077 != 0 {
+		t.Errorf("keepass file has permissive mode %v", info.Mode().Perm())
+	}
 }
 
 func TestNewFileGet(t *testing.T) {

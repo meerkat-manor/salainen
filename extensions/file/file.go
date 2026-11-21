@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/meerkat-manor/salainen"
+	"github.com/meerkat-manor/salainen/internal/pathlock"
+	"github.com/meerkat-manor/salainen/internal/securepath"
 )
 
 type f struct {
@@ -33,27 +35,23 @@ func (sl *f) Init(custom interface{}) error {
 }
 
 func (sl *f) Put(path string, val string) error {
-	parts := strings.SplitN(path, "|", 2)
-	fpath := parts[0]
+	fpath, err := securepath.Resolve(sl.RootPath, path)
+	if err != nil {
+		return err
+	}
 
-	if sl.RootPath != "" {
-		fpath = filepath.Join(sl.RootPath, fpath)
-	}
-	if strings.HasPrefix(fpath, "~/") || strings.HasPrefix(fpath, "~\\") {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return err
-		}
-		fpath = filepath.Join(homeDir, fpath[2:])
-	}
+	pathlock.Lock(fpath)
+	defer pathlock.Unlock(fpath)
 
 	parent := filepath.Dir(fpath)
-	if _, err := os.Stat(parent); err != nil {
-		os.MkdirAll(parent, os.ModeDir)
+	if err := os.MkdirAll(parent, 0o700); err != nil {
+		return fmt.Errorf("failed to create directory for secret file: %v", err)
 	}
 
-	err := os.WriteFile(fpath, []byte(val), os.ModePerm)
-	if err != nil {
+	if err := os.WriteFile(fpath, []byte(val), 0o600); err != nil {
+		return err
+	}
+	if err := os.Chmod(fpath, 0o600); err != nil {
 		return err
 	}
 
@@ -61,31 +59,20 @@ func (sl *f) Put(path string, val string) error {
 }
 
 func (sl *f) Get(path string) (string, error) {
-	parts := strings.SplitN(path, "|", 2)
-	fpath := parts[0]
-
-	if sl.RootPath != "" {
-		fpath = filepath.Join(sl.RootPath, fpath)
-	}
-	if strings.HasPrefix(fpath, "~/") || strings.HasPrefix(fpath, "~\\") {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		fpath = filepath.Join(homeDir, fpath[2:])
+	fpath, err := securepath.Resolve(sl.RootPath, path)
+	if err != nil {
+		return "", err
 	}
 
-	parent := filepath.Dir(fpath)
-	if _, err := os.Stat(parent); err != nil {
-		return "", fmt.Errorf("directory '%s' does not exist", parent)
-	}
+	pathlock.RLock(fpath)
+	defer pathlock.RUnlock(fpath)
 
 	data, err := os.ReadFile(fpath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", salainen.ErrNoSuchSecret
 		}
-		return "", err
+		return "", fmt.Errorf("error with %s provider: %v", providerName, err)
 	}
 
 	// Strip last character EOL/EOF
@@ -104,7 +91,7 @@ func (sl *f) Help() {
 	fmt.Printf("\n")
 	fmt.Printf("The special value of '~' is recognised as your home directory.\n")
 	fmt.Printf("You can store secrets in your home directory by specifying a\n")
-	fmt.Printf("configured 'RootPath' such as '~/.secrets/%s'\n", "salainen") // TODO improve
+	fmt.Printf("configured 'RootPath' such as '~/.secrets/%s'\n", "salainen")
 	fmt.Printf("\n")
 	fmt.Printf("For more information please see %s/extensions/file/ \n", salainen.SourceForgeURL)
 }

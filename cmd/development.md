@@ -1,4 +1,4 @@
-# Development of Salainen CLI
+# Development of salainen CLI
 
 If you are developing and enhancing the **salainen** code the following
 go execution commands might be useful.
